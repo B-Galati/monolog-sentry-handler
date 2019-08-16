@@ -1,0 +1,30 @@
+language: php
+dist: bionic
+sudo: false
+
+env:
+  global:
+    - COMPOSER_INSTALL_FLAGS="--no-interaction --no-progress --prefer-dist"
+    - COMPOSER_UPDATE_FLAGS="--no-interaction --no-progress --prefer-dist"
+
+matrix:
+  fast_finish: true
+  include:
+    - php: 7.1
+      env: COMPOSER_UPDATE_FLAGS="--prefer-lowest ${COMPOSER_UPDATE_FLAGS}"
+    - php: 7.2
+    - php: 7.3
+
+cache:
+  directories:
+    - ${HOME}/.composer/cache
+
+before_install:
+  - phpenv config-rm xdebug.ini || true
+
+before_script:
+  - composer self-update
+
+script:
+  - stty cols 120
+  - make tests-ci
