@@ -1,5 +1,5 @@
 {
-    "name": "bgalati/sentry-handler",
+    "name": "bgalati/monolog-sentry-handler",
     "description": "Sentry handler for php SDK",
     "type": "library",
     "license": "MIT",
