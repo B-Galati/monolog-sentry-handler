@@ -6,10 +6,10 @@ COMPOSER_UPDATE_FLAGS ?=
 help:
 	@grep -E '(^[a-zA-Z_-]+:.*?##.*$$)|(^##)' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
 
-vendor: composer.lock composer.json ## install composer deps
+vendor: composer.lock ## install composer deps
 	composer install $(COMPOSER_INSTALL_FLAGS)
 	@touch $@
-composer.lock:
+composer.lock: composer.json
 	composer update $(COMPOSER_UPDATE_FLAGS)
 	@touch $@
 

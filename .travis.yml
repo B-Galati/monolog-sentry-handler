@@ -21,9 +21,10 @@ cache:
 
 before_install:
   - phpenv config-rm xdebug.ini || true
+  - composer global require --no-progress --no-scripts --no-plugins symfony/flex dev-master
 
-before_script:
-  - composer self-update
+install:
+  - make vendor
 
 script:
   - stty cols 120
