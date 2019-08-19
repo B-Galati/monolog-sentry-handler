@@ -22,6 +22,11 @@
     "config": {
         "sort-packages": true
     },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.x-dev"
+        }
+    },
     "require": {
         "php": "^7.1.3",
         "monolog/monolog": "^1.6",
