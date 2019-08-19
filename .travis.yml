@@ -23,9 +23,6 @@ before_install:
   - phpenv config-rm xdebug.ini || true
   - composer global require --no-progress --no-scripts --no-plugins symfony/flex dev-master
 
-install:
-  - make vendor
-
 script:
   - stty cols 120
   - make tests-ci

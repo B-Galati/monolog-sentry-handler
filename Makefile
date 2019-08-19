@@ -14,7 +14,7 @@ composer.lock: composer.json
 	@touch $@
 
 .PHONY: tests-ci tests
-tests-ci: composer-validate phpstan cs-check phpunit
+tests-ci: composer-validate phpstan phpunit
 tests: tests-ci cs-check
 
 .PHONY: composer-validate
