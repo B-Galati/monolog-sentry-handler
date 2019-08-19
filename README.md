@@ -4,6 +4,8 @@
 [![Latest Version](https://img.shields.io/github/release/B-Galati/monolog-sentry-handler.svg?style=flat-square)](https://packagist.org/packages/bgalati/monolog-sentry-handler)
 [![MIT License](https://img.shields.io/github/license/B-Galati/monolog-sentry-handler?style=flat-square)](LICENCE)
 
+It is a [Monolog](https://github.com/Seldaek/monolog) handler for Sentry PHP SDK v2 with breadcrumbs support. 
+
 ## Features
 
 - Send each log record to a [Sentry](https://sentry.io) server
@@ -42,7 +44,7 @@ $logger->debug('Foo');
 $logger->error('Bar');
 ```
 
-Checkout the [handler constructor](src/SentryHandler.php) to know how to control the minimum logging level and bubbling.
+Check out the [handler constructor](src/SentryHandler.php) to know how to control the minimum logging level and bubbling.
 
 ## Documentation
 
@@ -52,10 +54,10 @@ Checkout the [handler constructor](src/SentryHandler.php) to know how to control
 
 ### What are the differences with the official Monolog Sentry handler?
 
-It is pretty much the same thing but this one capture Monolog records as breadcrumbs 
+It is pretty much the same thing but this one captures Monolog records as breadcrumbs 
 when flushing in batch.
 
-It provides a workaround for [issue 811](https://github.com/getsentry/sentry-php/issues/811).
+It provides a workaround for [issue 811](https://github.com/getsentry/sentry-php/issues/811) which prevents sending events to Sentry in long running process.
 
 Breadcrumbs support has been proposed in a pull request that has been refused for good reasons that
 can be checked in the [PR](https://github.com/getsentry/sentry-php/pull/844). Basically the official one aims to be as simple as possible. 
@@ -63,7 +65,7 @@ can be checked in the [PR](https://github.com/getsentry/sentry-php/pull/844). Ba
 ### Why symfony guide while there is an [official Symfony bundle](https://github.com/getsentry/sentry-symfony)?
 
 The symfony official bundle relies on Symfony [KernelException event](https://symfony.com/doc/current/reference/events.html#kernel-exception) 
-to send event to Sentry while Symfony already cares about logging/capturing errors thanks the Monolog bundle.
+to send event to Sentry while Symfony already cares about logging/capturing errors thanks to Monolog bundle.
 
 At the end, it's not possible to report silenced error with the bundle which can be problematic if you want to be aware 
 of problems without making your app crashed.

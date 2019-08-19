@@ -1,6 +1,6 @@
 # Symfony guide
 
->ℹ️ Nota bene:
+>ℹ️
 >
 >- It was written for Symfony 4.
 >- Its main purpose is to give ideas of how to integrate this handler in a Symfony project
@@ -14,6 +14,7 @@ It provides the following benefits:
 - Flexibility: it's your code at the end so you can customize it to fit your project needs
 - Log Monolog records of the request lifecycle (Handled message for Messenger) in Sentry breadcrumbs
 - Configure Sentry app path and excluded paths (cache and vendor)
+- Resolve log PSR placeholders
 - Capture Sentry tags:
   - Application environment
   - Symfony version
@@ -34,13 +35,13 @@ It provides the following benefits:
 - [Step 1: Configure Sentry Hub](#step-1-configure-sentry-hub)
 - [Step 2: Configure Monolog](#step-2-configure-monolog)
 - [Step 3: Enrich Sentry data with Symfony events](#step-3-enrich-sentry-data-with-symfony-events)
-- [Step 4: Flush Monolog on each handled Messenger message](#step-4-flush-monolog-on-each-handled-messenger-message)
+- [Step 4: Flush Monolog on each handled Symfony Messenger message](#step-4-flush-monolog-on-each-handled-symfony-messenger-message)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Step 1: Configure Sentry Hub
 
-Let's configure the Sentry Hub with a factory, it gives full flexibility in terms of configuration.
+Let's configure the Sentry Hub with a factory. It gives full flexibility in terms of configuration.
 
 ```php
 <?php
@@ -62,7 +63,7 @@ class SentryFactory
     ): HubInterface {
         $clientBuilder = ClientBuilder::create([
             'dsn'                  => $dsn,
-            'environment'          => $environment, // I.e.: dev, testing, prod, etc.
+            'environment'          => $environment, // I.e.: staging, testing, production, etc.
             'project_root'         => $projectRoot,
             'in_app_exclude'       => [$cacheDir, "$projectRoot/vendor"],
             'prefixes'             => [$projectRoot],
@@ -77,6 +78,7 @@ class SentryFactory
             ],
         ]);
 
+        // Enable Sentry RequestIntegration
         $options = $clientBuilder->getOptions();
         $options->setIntegrations([new RequestIntegration($options)]);
 
@@ -116,7 +118,7 @@ services:
 
 ## Step 2: Configure Monolog
 
-We use the services we just declared in monolog config.
+We use the services we just declared in monolog config:
 
 ```yaml
 # config/packages/prod/monolog.yaml
@@ -142,10 +144,18 @@ monolog:
 Let's explain what all of these is doing: 
 
 - `FingersCrossedHandler`: buffers all records until a certain level is reached
-- `BufferHandler`: keep buffering message if the `FingersCrossedHandler` is triggered so that we have all logs for a given request
-- `SentryHandler`: to send log records in batch to Sentry
+- `BufferHandler`: keeps buffering message if the `FingersCrossedHandler` is triggered so that we have all logs for a given request
+- `SentryHandler`: sends log records in batch to Sentry
 
 ## Step 3: Enrich Sentry data with Symfony events
+
+This listener adds context to each events captured by Sentry. A good part of what it does comes
+from the official Sentry Symfony bundle actually. It registers:
+
+- Current user (IP, username, roles, type)
+- Response status code
+- Current route
+- Current command
 
 ```php
 <?php
@@ -258,14 +268,14 @@ class SentryListener implements EventSubscriberInterface
 
 ## Step 4: Flush Monolog on each handled Symfony Messenger message
 
-The usage of `FingersCrossedHandler` and `BufferHandler` makes long running process
-like Symfony Messenger worker not sending any event to Sentry.
+The usage of `FingersCrossedHandler` and `BufferHandler` prevents long running process
+like Symfony Messenger worker to send captured events to Sentry.
 
 It works in a HTTP Request context because these handlers are automatically flushed
-by Monolog on PHP script shutdown. And that's not how a worker works.
+by Monolog on PHP script shutdown but it's not how a worker works.
 
 The listener below resolves this problem by manually flushed Monolog logger 
-on `WorkerMessageFailedEvent` and `WorkerMessageHandledEvent`.
+on `WorkerMessageFailedEvent` and `WorkerMessageHandledEvent` events.
 
 ```php
 <?php
