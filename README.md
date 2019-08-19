@@ -70,6 +70,15 @@ to send event to Sentry while Symfony already cares about logging/capturing erro
 At the end, it's not possible to report silenced error with the bundle which can be problematic if you want to be aware 
 of problems without making your app crashed.
 
+### What about contributing it to the Monolog project?
+
+As per this [comment](https://github.com/Seldaek/monolog/pull/1334#issuecomment-507297849), Monolog project does 
+not accept new handler with 3rd party dependencies.
+
+>For new handlers with third-party dependencies IMO the right way is to publish as a third-party package,
+>with requires on monolog and on whichever dependency is needed.
+>It lets Composer resolve everything which makes more sense really.
+
 ## Contributing
 
 Fork me.
