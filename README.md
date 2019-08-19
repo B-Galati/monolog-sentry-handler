@@ -72,15 +72,11 @@ of problems without making your app crashed.
 
 ## Contributing
 
-Clone the repository:
-
-```bash
-git clone git@github.com:B-Galati/monolog-sentry-handler.git
-``` 
+Fork me.
 
 Install dependencies with `make vendor`.
 
-Tests can be ran with `make tests`.
+Run tests with `make tests`.
 
 ## Changelog
 
