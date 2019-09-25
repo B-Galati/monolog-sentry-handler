@@ -1,17 +1,18 @@
 # Symfony guide
 
->ℹ️
+>:information_source:
 >
 >- It was written for Symfony 4.
 >- Its main purpose is to give ideas of how to integrate this handler in a Symfony project
 
 This guide proposed an opinionated solution to integrate Sentry in a Symfony project.
 It uses a `FingersCrossedHandler` with a `BufferHandler` to leverage Sentry breadcrumbs 
-in order to give maximum context for each Sentry event.
+in order to give maximum context for each Sentry event. It also prevents slowing down http requests.
 
 It provides the following benefits:
 
 - Flexibility: it's your code at the end so you can customize it to fit your project needs
+- Resolve issue [getsentry/sentry-php#878](https://github.com/getsentry/sentry-php/issues/878)
 - Log Monolog records of the request lifecycle (Handled message for Messenger) in Sentry breadcrumbs
 - Configure Sentry app path and excluded paths (cache and vendor)
 - Resolve log PSR placeholders
@@ -41,16 +42,34 @@ It provides the following benefits:
 
 ## Step 1: Configure Sentry Hub
 
+Symfony http client is required:
+
+```
+composer require symfony/http-client
+```
+
 Let's configure the Sentry Hub with a factory. It gives full flexibility in terms of configuration.
 
 ```php
 <?php
 
 use App\Kernel;
+use Http\Client\Exception\NetworkException;
+use Http\Client\Exception\RequestException;
+use Http\Client\HttpAsyncClient;
+use Http\Client\Promise\HttpFulfilledPromise;
+use Http\Client\Promise\HttpRejectedPromise;
+use Nyholm\Psr7\Factory\Psr17Factory;
+use Psr\Http\Client\NetworkExceptionInterface;
+use Psr\Http\Client\RequestExceptionInterface;
+use Psr\Http\Message\RequestInterface;
 use Sentry\ClientBuilder;
 use Sentry\Integration\RequestIntegration;
+use Sentry\SentrySdk;
 use Sentry\State\Hub;
 use Sentry\State\HubInterface;
+use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Component\HttpClient\Psr18Client;
 
 class SentryFactory
 {
@@ -69,6 +88,7 @@ class SentryFactory
             'prefixes'             => [$projectRoot],
             'release'              => $release,
             'default_integrations' => false,
+            'send_attempts'        => 1,
             'tags'                 => [
                 'php_uname'       => \PHP_OS,
                 'php_sapi_name'   => \PHP_SAPI,
@@ -78,14 +98,53 @@ class SentryFactory
             ],
         ]);
 
+        $clientBuilder->setHttpClient(new SentryHttpClient());
+
         // Enable Sentry RequestIntegration
         $options = $clientBuilder->getOptions();
-        $options->setIntegrations([new RequestIntegration($options)]);
+        $options->setIntegrations([new RequestIntegration()]);
 
         $client = $clientBuilder->getClient();
 
         // A global HubInterface must be set otherwise some feature provided by the SDK does not work as they rely on this global state
-        return Hub::setCurrent(new Hub($client));
+        return SentrySdk::setCurrentHub(new Hub($client));
+    }
+}
+
+/**
+ * @see https://github.com/symfony/symfony/blob/4.4/src/Symfony/Component/HttpClient/HttplugClient.php
+ *
+ * Beware of the following issue with the default HTTP that comes with the Sentry SDK
+ * @see https://github.com/getsentry/sentry-php/issues/878
+ */
+class SentryHttpClient implements HttpAsyncClient
+{
+    private $client;
+
+    public function __construct()
+    {
+        $factory = new Psr17Factory();
+
+        // DO NOT use the http client from Symfony or you could turn into an infinite loop depending on your monolog config and the if logging of HTTP request is enabled or not
+        $client = HttpClient::create(['timeout' => 2]);
+
+        $this->client = new Psr18Client($client, $factory, $factory);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function sendAsyncRequest(RequestInterface $request)
+    {
+        try {
+            $response = $this->client->sendRequest($request);
+        } catch (RequestExceptionInterface $e) {
+            return new HttpRejectedPromise(new RequestException($e->getMessage(), $request, $e));
+        } catch (NetworkExceptionInterface $e) {
+            return new HttpRejectedPromise(new NetworkException($e->getMessage(), $request, $e));
+        }
+
+        return new HttpFulfilledPromise($response);
     }
 }
 ```

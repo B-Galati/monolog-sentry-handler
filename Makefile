@@ -15,7 +15,7 @@ composer.lock: composer.json
 
 .PHONY: tests-ci tests
 tests-ci: composer-validate phpstan phpunit
-tests: tests-ci cs-check
+tests: tests-ci cs-check ## Run all tests
 
 .PHONY: composer-validate
 composer-validate: vendor composer.json composer.lock ## Validate composer.json file
