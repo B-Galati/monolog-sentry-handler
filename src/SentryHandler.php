@@ -8,11 +8,9 @@ use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Logger;
 use Sentry\Breadcrumb;
-use Sentry\Client;
 use Sentry\Severity;
 use Sentry\State\HubInterface;
 use Sentry\State\Scope;
-use Sentry\Transport\HttpTransport;
 
 class SentryHandler extends AbstractProcessingHandler
 {
@@ -103,36 +101,6 @@ class SentryHandler extends AbstractProcessingHandler
 
             $this->hub->captureEvent($payload);
         });
-
-        $this->flushSentryEvents();
-    }
-
-    /**
-     * Block until all async events are processed for the HTTP transport.
-     *
-     * @see https://github.com/getsentry/sentry-php/issues/811
-     */
-    private function flushSentryEvents(): void
-    {
-        // Inspired by https://github.com/getsentry/sentry-laravel/blob/14e8bf07f4254f031db3e88096ed8a8959aa34c1/src/Sentry/Laravel/Integration.php#L94-L112
-        $client = $this->hub->getClient();
-
-        if (!$client instanceof Client) {
-            return;
-        }
-
-        $transportProperty = new \ReflectionProperty(Client::class, 'transport');
-        $transportProperty->setAccessible(true);
-
-        $transport = $transportProperty->getValue($client);
-
-        if ($transport instanceof HttpTransport) {
-            \Closure::bind(
-                function () {$this->cleanupPendingRequests(); },
-                $transport,
-                $transport
-            )();
-        }
     }
 
     /**

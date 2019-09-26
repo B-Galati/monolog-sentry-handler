@@ -5,31 +5,40 @@ declare(strict_types=1);
 namespace BGalati\MonologSentryHandler\Tests;
 
 use BGalati\MonologSentryHandler\SentryHandler;
+use Coduo\PHPMatcher\PHPUnit\PHPMatcherAssertions;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Sentry\Breadcrumb;
-use Sentry\ClientInterface;
-use Sentry\Integration\IntegrationInterface;
+use Sentry\ClientBuilder;
+use Sentry\Event;
 use Sentry\Severity;
 use Sentry\State\Hub;
-use Sentry\State\HubInterface;
-use Sentry\State\Scope;
+use Sentry\Transport\NullTransport;
 
 class SentryHandlerTest extends TestCase
 {
+    use PHPMatcherAssertions;
+
     private $hub;
+    private $transport;
 
     protected function setUp(): void
     {
-        $client = $this->prophesize(ClientInterface::class);
+        $this->transport = new SpyTransport();
 
-        $this->hub = new SpyHub(new Hub($client->reveal()));
+        $clientBuilder = ClientBuilder::create();
+        $clientBuilder->setTransport($this->transport);
+
+        $client = $clientBuilder->getClient();
+
+        $this->hub = new Hub($client);
     }
 
     protected function tearDown(): void
     {
-        $this->hub = null;
+        $this->hub       = null;
+        $this->transport = null;
     }
 
     public function testHandle(): void
@@ -82,8 +91,7 @@ class SentryHandlerTest extends TestCase
         $handler = $this->createSentryHandler();
         $handler->handleBatch([]);
 
-        $this->assertNull($this->hub->spiedScope);
-        $this->assertNull($this->hub->spiedEvent);
+        $this->assertNull($this->transport->spiedEvent);
     }
 
     public function testHandleBatch(): void
@@ -166,60 +174,68 @@ class SentryHandlerTest extends TestCase
             null,
             [
                 [
-                    'type'     => 'default',
-                    'category' => 'chan-info',
-                    'level'    => 'info',
-                    'message'  => 'chan-info.INFO: Info message ["extra-info"]',
-                    'data'     => [],
+                    'type'      => 'default',
+                    'category'  => 'chan-info',
+                    'level'     => 'info',
+                    'message'   => 'chan-info.INFO: Info message ["extra-info"]',
+                    'timestamp' => '@double@',
+                    'data'      => [],
                 ],
                 [
-                    'type'     => 'error',
-                    'category' => 'chan-error',
-                    'level'    => 'error',
-                    'message'  => 'chan-error.ERROR: Error Message ["extra-error"]',
-                    'data'     => [],
+                    'type'      => 'error',
+                    'category'  => 'chan-error',
+                    'level'     => 'error',
+                    'message'   => 'chan-error.ERROR: Error Message ["extra-error"]',
+                    'timestamp' => '@double@',
+                    'data'      => [],
                 ],
                 [
-                    'type'     => 'default',
-                    'category' => 'chan-debug',
-                    'level'    => 'debug',
-                    'message'  => 'chan-debug.DEBUG: Debug message ["extra-debug"]',
-                    'data'     => [],
+                    'type'      => 'default',
+                    'category'  => 'chan-debug',
+                    'level'     => 'debug',
+                    'message'   => 'chan-debug.DEBUG: Debug message ["extra-debug"]',
+                    'timestamp' => '@double@',
+                    'data'      => [],
                 ],
                 [
-                    'type'     => 'error',
-                    'category' => 'chan-emerg',
-                    'level'    => 'critical',
-                    'message'  => 'chan-emerg.EMERGENCY: Emergency message ["extra-emerg"]',
-                    'data'     => [],
+                    'type'      => 'error',
+                    'category'  => 'chan-emerg',
+                    'level'     => 'critical',
+                    'message'   => 'chan-emerg.EMERGENCY: Emergency message ["extra-emerg"]',
+                    'timestamp' => '@double@',
+                    'data'      => [],
                 ],
                 [
-                    'type'     => 'default',
-                    'category' => 'chan-warn',
-                    'level'    => 'warning',
-                    'message'  => 'chan-warn.WARNING: Warning message ["extra-warn"]',
-                    'data'     => [],
+                    'type'      => 'default',
+                    'category'  => 'chan-warn',
+                    'level'     => 'warning',
+                    'message'   => 'chan-warn.WARNING: Warning message ["extra-warn"]',
+                    'timestamp' => '@double@',
+                    'data'      => [],
                 ],
                 [
-                    'type'     => 'default',
-                    'category' => 'chan-notice',
-                    'level'    => 'info',
-                    'message'  => 'chan-notice.NOTICE: Notice message ["extra-notice"]',
-                    'data'     => [],
+                    'type'      => 'default',
+                    'category'  => 'chan-notice',
+                    'level'     => 'info',
+                    'message'   => 'chan-notice.NOTICE: Notice message ["extra-notice"]',
+                    'timestamp' => '@double@',
+                    'data'      => [],
                 ],
                 [
-                    'type'     => 'error',
-                    'category' => 'chan-alert',
-                    'level'    => 'critical',
-                    'message'  => 'chan-alert.ALERT: Alert message ["extra-alert"]',
-                    'data'     => [],
+                    'type'      => 'error',
+                    'category'  => 'chan-alert',
+                    'level'     => 'critical',
+                    'message'   => 'chan-alert.ALERT: Alert message ["extra-alert"]',
+                    'timestamp' => '@double@',
+                    'data'      => [],
                 ],
                 [
-                    'type'     => 'error',
-                    'category' => 'chan-critical',
-                    'level'    => 'critical',
-                    'message'  => 'chan-critical.CRITICAL: Critical message ["extra-critical"]',
-                    'data'     => [],
+                    'type'      => 'error',
+                    'category'  => 'chan-critical',
+                    'level'     => 'critical',
+                    'message'   => 'chan-critical.CRITICAL: Critical message ["extra-critical"]',
+                    'timestamp' => '@double@',
+                    'data'      => [],
                 ],
             ]
         );
@@ -289,25 +305,28 @@ class SentryHandlerTest extends TestCase
             $exception,
             [
                 [
-                    'type'     => 'error',
-                    'category' => 'test',
-                    'level'    => 'error',
-                    'message'  => 'test.ERROR: Error Message []',
-                    'data'     => [],
+                    'type'      => 'error',
+                    'category'  => 'test',
+                    'level'     => 'error',
+                    'message'   => 'test.ERROR: Error Message []',
+                    'timestamp' => '@double@',
+                    'data'      => [],
                 ],
                 [
-                    'type'     => 'default',
-                    'category' => 'test',
-                    'level'    => 'warning',
-                    'message'  => 'test.WARNING: Warning message []',
-                    'data'     => [],
+                    'type'      => 'default',
+                    'category'  => 'test',
+                    'level'     => 'warning',
+                    'message'   => 'test.WARNING: Warning message []',
+                    'timestamp' => '@double@',
+                    'data'      => [],
                 ],
                 [
-                    'type'     => 'error',
-                    'category' => 'test',
-                    'level'    => 'critical',
-                    'message'  => 'test.CRITICAL: Critical message []',
-                    'data'     => [],
+                    'type'      => 'error',
+                    'category'  => 'test',
+                    'level'     => 'critical',
+                    'message'   => 'test.CRITICAL: Critical message []',
+                    'timestamp' => '@double@',
+                    'data'      => [],
                 ],
             ]
         );
@@ -329,7 +348,7 @@ class SentryHandlerTest extends TestCase
         ];
 
         $handler->handleBatch($records);
-        $this->hub->resetSpy();
+        $this->transport->resetSpy();
         $handler->handleBatch($records);
 
         $this->assertCapturedEvent(
@@ -339,11 +358,12 @@ class SentryHandlerTest extends TestCase
             null,
             [
                 [
-                    'type'     => 'default',
-                    'category' => 'test',
-                    'level'    => 'info',
-                    'message'  => 'test.INFO: Info message []',
-                    'data'     => [],
+                    'type'      => 'default',
+                    'category'  => 'test',
+                    'level'     => 'info',
+                    'message'   => 'test.INFO: Info message []',
+                    'timestamp' => '@double@',
+                    'data'      => [],
                 ],
             ]
         );
@@ -351,21 +371,58 @@ class SentryHandlerTest extends TestCase
 
     private function assertCapturedEvent(Severity $severity, string $message, array $extra, \Exception $exception = null, array $breadcrumbs = []): void
     {
-        $expectedEvent = [
-            'level'   => $severity,
-            'message' => $message,
-        ];
+        $event = $this->transport->spiedEvent->toArray();
 
         if (null !== $exception) {
-            $expectedEvent['exception'] = $exception;
+            $this->assertCount(1, $event['exception']['values']);
+            $this->assertSame(\get_class($exception), $event['exception']['values'][0]['type']);
+            $this->assertSame($exception->getMessage(), $event['exception']['values'][0]['value']);
+        } else {
+            $this->assertArrayNotHasKey('exception', $event);
         }
 
-        $this->assertEquals($expectedEvent, $this->hub->spiedEvent);
-        $this->assertSame($breadcrumbs, $this->hub->getSpiedScopeBreadcrumbsAsArray());
-        $this->assertSame($extra, $this->hub->spiedScope->getExtra());
-        $this->assertEquals($severity, $this->hub->spiedScope->getLevel());
-        $this->assertSame([], $this->hub->spiedScope->getTags());
-        $this->assertSame([], $this->hub->spiedScope->getUser());
+        $this->assertArrayNotHasKey('tags', $event);
+        $this->assertArrayNotHasKey('user', $event);
+        $this->assertSame($message, $event['message']);
+        $this->assertSame((string) $severity, $event['level']);
+        $this->assertMatchesPattern('@string@', $event['event_id']);
+        $this->assertMatchesPattern('@string@', $event['timestamp']);
+        $this->assertMatchesPattern('@string@', $event['platform']);
+        $this->assertMatchesPattern('@string@', $event['server_name']);
+        $this->assertMatchesPattern($extra, $event['extra']);
+
+        if ($breadcrumbs) {
+            $this->assertMatchesPattern(
+                json_encode($breadcrumbs),
+                json_encode($event['breadcrumbs']['values'])
+            );
+        } else {
+            $this->assertArrayNotHasKey('breadcrumbs', $event);
+        }
+
+        $this->assertMatchesPattern(
+            [
+                'name'    => 'sentry.php',
+                'version' => '@string@',
+            ],
+            $event['sdk']
+        );
+
+        $this->assertMatchesPattern(
+            [
+                'os'      => [
+                    'name'           => '@string@',
+                    'version'        => '@string@',
+                    'build'          => '@string@',
+                    'kernel_version' => '@string@',
+                ],
+                'runtime' => [
+                    'name'    => 'php',
+                    'version' => '@string@',
+                ],
+            ],
+            $event['contexts']
+        );
     }
 
     private function createSentryHandler(int $level = null): SentryHandler
@@ -382,34 +439,28 @@ class SentryHandlerTest extends TestCase
     }
 }
 
-class SpyHub implements HubInterface
+class SpyTransport extends NullTransport
 {
-    private $hub;
-
     /**
-     * @var array|null
+     * @var Event|null
      */
     public $spiedEvent;
 
-    /**
-     * @var Scope|null
-     */
-    public $spiedScope;
-
-    public function __construct(Hub $hub)
+    public function send(Event $event): ?string
     {
-        $this->hub = $hub;
+        $this->spiedEvent = $event;
+
+        return parent::send($event);
     }
 
     public function resetSpy(): void
     {
         $this->spiedEvent = null;
-        $this->spiedScope = null;
     }
 
-    public function getSpiedScopeBreadcrumbsAsArray(): array
+    public function getBreadcrumbsAsArray(): array
     {
-        if (null === $this->spiedScope) {
+        if (null === $this->spiedEvent) {
             throw new \RuntimeException('No spied scope');
         }
 
@@ -421,95 +472,7 @@ class SpyHub implements HubInterface
 
                 return $array;
             },
-            $this->spiedScope->getBreadcrumbs()
+            $this->spiedEvent->getBreadcrumbs()
         );
-    }
-
-    public function getClient(): ?ClientInterface
-    {
-        return $this->hub->getClient();
-    }
-
-    public function getLastEventId(): ?string
-    {
-        throw new \RuntimeException('Not needed for test');
-    }
-
-    public function pushScope(): Scope
-    {
-        throw new \RuntimeException('Not needed for test');
-    }
-
-    public function popScope(): bool
-    {
-        throw new \RuntimeException('Not needed for test');
-    }
-
-    public function withScope(callable $callback): void
-    {
-        if (null !== $this->spiedScope) {
-            throw new \RuntimeException('There is already a scope registered in spy');
-        }
-
-        $this->hub->withScope(function (Scope $scope) use ($callback) {
-            $callback($scope);
-            $this->spiedScope = $scope;
-        });
-    }
-
-    public function configureScope(callable $callback): void
-    {
-        throw new \RuntimeException('Not needed for test');
-    }
-
-    public function bindClient(ClientInterface $client): void
-    {
-        throw new \RuntimeException('Not needed for test');
-    }
-
-    public function captureMessage(string $message, ?Severity $level = null): ?string
-    {
-        throw new \RuntimeException('Not needed for test');
-    }
-
-    public function captureException(\Throwable $exception): ?string
-    {
-        throw new \RuntimeException('Not needed for test');
-    }
-
-    public function captureEvent(array $payload): ?string
-    {
-        if (null !== $this->spiedEvent) {
-            throw new \RuntimeException('There is already an event registered in spy');
-        }
-
-        $this->spiedEvent = $payload;
-
-        return $this->hub->captureEvent($payload);
-    }
-
-    public function captureLastError(): ?string
-    {
-        throw new \RuntimeException('Not needed for test');
-    }
-
-    public function addBreadcrumb(Breadcrumb $breadcrumb): bool
-    {
-        return $this->hub->addBreadcrumb($breadcrumb);
-    }
-
-    public static function getCurrent(): HubInterface
-    {
-        throw new \RuntimeException('Not needed for test');
-    }
-
-    public static function setCurrent(HubInterface $hub): HubInterface
-    {
-        throw new \RuntimeException('Not needed for test');
-    }
-
-    public function getIntegration(string $className): ?IntegrationInterface
-    {
-        throw new \RuntimeException('Not needed for test');
     }
 }
