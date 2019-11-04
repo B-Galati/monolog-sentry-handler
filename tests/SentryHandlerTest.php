@@ -6,6 +6,8 @@ namespace BGalati\MonologSentryHandler\Tests;
 
 use BGalati\MonologSentryHandler\SentryHandler;
 use Coduo\PHPMatcher\PHPUnit\PHPMatcherAssertions;
+use GuzzleHttp\Promise\FulfilledPromise;
+use GuzzleHttp\Promise\PromiseInterface;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
@@ -14,6 +16,7 @@ use Sentry\ClientBuilder;
 use Sentry\Event;
 use Sentry\Severity;
 use Sentry\State\Hub;
+use Sentry\Transport\ClosableTransportInterface;
 use Sentry\Transport\NullTransport;
 
 class SentryHandlerTest extends TestCase
@@ -27,7 +30,7 @@ class SentryHandlerTest extends TestCase
     {
         $this->transport = new SpyTransport();
 
-        $clientBuilder = ClientBuilder::create();
+        $clientBuilder = ClientBuilder::create(['default_integrations' => false]);
         $clientBuilder->setTransport($this->transport);
 
         $client = $clientBuilder->getClient();
@@ -200,7 +203,7 @@ class SentryHandlerTest extends TestCase
                 [
                     'type'      => 'error',
                     'category'  => 'chan-emerg',
-                    'level'     => 'critical',
+                    'level'     => 'fatal',
                     'message'   => 'chan-emerg.EMERGENCY: Emergency message ["extra-emerg"]',
                     'timestamp' => '@double@',
                     'data'      => [],
@@ -224,7 +227,7 @@ class SentryHandlerTest extends TestCase
                 [
                     'type'      => 'error',
                     'category'  => 'chan-alert',
-                    'level'     => 'critical',
+                    'level'     => 'fatal',
                     'message'   => 'chan-alert.ALERT: Alert message ["extra-alert"]',
                     'timestamp' => '@double@',
                     'data'      => [],
@@ -232,7 +235,7 @@ class SentryHandlerTest extends TestCase
                 [
                     'type'      => 'error',
                     'category'  => 'chan-critical',
-                    'level'     => 'critical',
+                    'level'     => 'fatal',
                     'message'   => 'chan-critical.CRITICAL: Critical message ["extra-critical"]',
                     'timestamp' => '@double@',
                     'data'      => [],
@@ -323,7 +326,7 @@ class SentryHandlerTest extends TestCase
                 [
                     'type'      => 'error',
                     'category'  => 'test',
-                    'level'     => 'critical',
+                    'level'     => 'fatal',
                     'message'   => 'test.CRITICAL: Critical message []',
                     'timestamp' => '@double@',
                     'data'      => [],
@@ -381,6 +384,7 @@ class SentryHandlerTest extends TestCase
             $this->assertArrayNotHasKey('exception', $event);
         }
 
+        $this->assertTrue($this->transport->isFlushed);
         $this->assertArrayNotHasKey('tags', $event);
         $this->assertArrayNotHasKey('user', $event);
         $this->assertSame($message, $event['message']);
@@ -439,12 +443,17 @@ class SentryHandlerTest extends TestCase
     }
 }
 
-class SpyTransport extends NullTransport
+class SpyTransport extends NullTransport implements ClosableTransportInterface
 {
     /**
      * @var Event|null
      */
     public $spiedEvent;
+
+    /**
+     * @var bool
+     */
+    public $isFlushed = false;
 
     public function send(Event $event): ?string
     {
@@ -456,6 +465,7 @@ class SpyTransport extends NullTransport
     public function resetSpy(): void
     {
         $this->spiedEvent = null;
+        $this->isFlushed  = false;
     }
 
     public function getBreadcrumbsAsArray(): array
@@ -474,5 +484,12 @@ class SpyTransport extends NullTransport
             },
             $this->spiedEvent->getBreadcrumbs()
         );
+    }
+
+    public function close(?int $timeout = null): PromiseInterface
+    {
+        $this->isFlushed = true;
+
+        return new FulfilledPromise(true);
     }
 }

@@ -8,6 +8,7 @@ use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Logger;
 use Sentry\Breadcrumb;
+use Sentry\FlushableClientInterface;
 use Sentry\Severity;
 use Sentry\State\HubInterface;
 use Sentry\State\Scope;
@@ -101,6 +102,16 @@ class SentryHandler extends AbstractProcessingHandler
 
             $this->hub->captureEvent($payload);
         });
+
+        $this->flushEvents();
+    }
+
+    private function flushEvents(): void
+    {
+        $client = $this->hub->getClient();
+        if ($client instanceof FlushableClientInterface) {
+            $client->flush();
+        }
     }
 
     /**
@@ -143,7 +154,7 @@ class SentryHandler extends AbstractProcessingHandler
             case Logger::ERROR:
                 return Breadcrumb::LEVEL_ERROR;
             default:
-                return Breadcrumb::LEVEL_CRITICAL;
+                return Breadcrumb::LEVEL_FATAL;
         }
     }
 

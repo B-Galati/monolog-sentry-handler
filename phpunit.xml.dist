@@ -8,6 +8,15 @@
          beStrictAboutOutputDuringTests="true"
          beStrictAboutTodoAnnotatedTests="true"
          verbose="true">
+    <php>
+        <ini name="error_reporting" value="-1" />
+        <env name="SHELL_VERBOSITY" value="-1" />
+    </php>
+
+    <listeners>
+        <listener class="Symfony\Bridge\PhpUnit\SymfonyTestsListener"/>
+    </listeners>
+
     <testsuites>
         <testsuite name="default">
             <directory suffix="Test.php">tests</directory>
