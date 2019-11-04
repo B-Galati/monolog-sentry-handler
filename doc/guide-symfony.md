@@ -303,9 +303,12 @@ class SentryListener implements EventSubscriberInterface
     public function onConsoleCommand(ConsoleCommandEvent $event): void
     {
         $command = $event->getCommand();
+        $command = $command ? $command->getName() : 'N/A';
+        $command = $command ?? 'N/A';
+
         $this->hub
             ->configureScope(static function (Scope $scope) use ($command): void {
-                $scope->setTag('command', $command ? $command->getName() : 'N/A');
+                $scope->setTag('command', $command);
             })
         ;
     }
