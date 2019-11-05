@@ -112,7 +112,7 @@ class SentryHandler extends AbstractProcessingHandler
      * Extension point.
      *
      * This method is called when Sentry event is captured by the handler.
-     * Override it if you want to add custom logic to the $scope
+     * Override it if you want to add custom data to Sentry $scope.
      *
      * @param Scope $scope       Sentry scope where you can add custom data
      * @param array $record      Current monolog record
