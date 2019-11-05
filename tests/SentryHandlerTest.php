@@ -16,6 +16,7 @@ use Sentry\ClientBuilder;
 use Sentry\Event;
 use Sentry\Severity;
 use Sentry\State\Hub;
+use Sentry\State\Scope;
 use Sentry\Transport\ClosableTransportInterface;
 use Sentry\Transport\NullTransport;
 
@@ -59,6 +60,7 @@ class SentryHandlerTest extends TestCase
 
         $handler->handle($record);
 
+        $this->assertTrue($handler->afterWriteCalled);
         $this->assertCapturedEvent(
             Severity::info(),
             'app.INFO: My info message',
@@ -81,6 +83,7 @@ class SentryHandlerTest extends TestCase
 
         $handler->handle($record);
 
+        $this->assertTrue($handler->afterWriteCalled);
         $this->assertCapturedEvent(
             Severity::info(),
             'app.INFO: My info message',
@@ -94,6 +97,7 @@ class SentryHandlerTest extends TestCase
         $handler = $this->createSentryHandler();
         $handler->handleBatch([]);
 
+        $this->assertFalse($handler->afterWriteCalled);
         $this->assertNull($this->transport->spiedEvent);
     }
 
@@ -170,6 +174,7 @@ class SentryHandlerTest extends TestCase
 
         $handler->handleBatch($records);
 
+        $this->assertTrue($handler->afterWriteCalled);
         $this->assertCapturedEvent(
             Severity::fatal(),
             'chan-emerg.EMERGENCY: Emergency message',
@@ -301,6 +306,7 @@ class SentryHandlerTest extends TestCase
 
         $handler->handleBatch($records);
 
+        $this->assertTrue($handler->afterWriteCalled);
         $this->assertCapturedEvent(
             Severity::fatal(),
             'test.CRITICAL: Critical message',
@@ -351,9 +357,15 @@ class SentryHandlerTest extends TestCase
         ];
 
         $handler->handleBatch($records);
+
+        $this->assertTrue($handler->afterWriteCalled);
+
+        $handler->resetSpy();
         $this->transport->resetSpy();
+
         $handler->handleBatch($records);
 
+        $this->assertTrue($handler->afterWriteCalled);
         $this->assertCapturedEvent(
             Severity::info(),
             'test.INFO: Info message',
@@ -393,7 +405,7 @@ class SentryHandlerTest extends TestCase
         $this->assertMatchesPattern('@string@', $event['timestamp']);
         $this->assertMatchesPattern('@string@', $event['platform']);
         $this->assertMatchesPattern('@string@', $event['server_name']);
-        $this->assertMatchesPattern($extra, $event['extra']);
+        $this->assertMatchesPattern(['processScope' => 'called'] + $extra, $event['extra']);
 
         if ($breadcrumbs) {
             $this->assertMatchesPattern(
@@ -414,7 +426,7 @@ class SentryHandlerTest extends TestCase
 
         $this->assertMatchesPattern(
             [
-                'os'      => [
+                'os' => [
                     'name'           => '@string@',
                     'version'        => '@string@',
                     'build'          => '@string@',
@@ -429,17 +441,41 @@ class SentryHandlerTest extends TestCase
         );
     }
 
-    private function createSentryHandler(int $level = null): SentryHandler
+    private function createSentryHandler(int $level = null): SpySentryHandler
     {
         if (null === $level) {
-            $handler = new SentryHandler($this->hub);
+            $handler = new SpySentryHandler($this->hub);
         } else {
-            $handler = new SentryHandler($this->hub, $level);
+            $handler = new SpySentryHandler($this->hub, $level);
         }
 
         $handler->setFormatter(new LineFormatter('%channel%.%level_name%: %message% %extra%'));
 
         return $handler;
+    }
+}
+
+class SpySentryHandler extends SentryHandler
+{
+    public $afterWriteCalled = false;
+
+    /** {@inheritdoc} */
+    protected function processScope(Scope $scope, array $record, array $sentryEvent): void
+    {
+        $scope->setExtra('processScope', 'called');
+    }
+
+    /** {@inheritdoc} */
+    protected function afterWrite(): void
+    {
+        $this->afterWriteCalled = true;
+
+        parent::afterWrite();
+    }
+
+    public function resetSpy(): void
+    {
+        $this->afterWriteCalled = false;
     }
 }
 
