@@ -10,7 +10,8 @@ It is a [Monolog](https://github.com/Seldaek/monolog) handler for Sentry PHP SDK
 
 - Send each log record to a [Sentry](https://sentry.io) server
 - Send log records as breadcrumbs when they are handled in batch; the main reported log record is the one with the highest log level
-- Send log along with exception when one is set in the main log record context 
+- Send log along with exception when one is set in the main log record context
+- Customize data sent to Sentry to fit your needs
 - Compatible with Monolog 1 and 2
 - ~~Workaround for [an issue](https://github.com/getsentry/sentry-php/issues/811) that prevents sending logs in long running process~~
 
@@ -56,53 +57,10 @@ Check out the [handler constructor](src/SentryHandler.php) to know how to contro
 >
 >Check out the symfony guide for a complete example that addresses all these points
 
-## Customizations / Extension points
-
-It is required to inherit from `SentryHandler` class and override these methods:
-
-```php
-<?php
-
-use BGalati\MonologSentryHandler\SentryHandler;
-use Sentry\State\Scope;
-
-class SpySentryHandler extends SentryHandler
-{
-    /** {@inheritdoc} */
-    protected function processScope(Scope $scope, array $record, array $sentryEvent): void
-    {
-        // Your custom logic like this one:
-        // ....
-        if (isset($record['context']['extra']) && \is_array($record['context']['extra'])) {
-            foreach ($record['context']['extra'] as $key => $value) {
-                $scope->setExtra((string) $key, $value);
-            }
-        }
-
-        if (isset($record['context']['tags']) && \is_array($record['context']['tags'])) {
-            foreach ($record['context']['tags'] as $key => $value) {
-                $scope->setTag($key, $value);
-            }
-        }
-    }
-
-    /** {@inheritdoc} */
-    protected function afterWrite(): void
-    {
-        // Your custom code before events are flushed
-        // ...
-
-        // Call parent method to keep default behavior or don't call it if you don't need it
-        parent::afterWrite();
-    }
-}
-```
-
-Please look at these methods within [the code](src/SentryHandler.php) if you want more details.
-
 ## Documentation
 
 - [Symfony guide](doc/guide-symfony.md): it gives a way to integrate this handler to your app
+- [Extension points](doc/extension-points.md): Customize data sent to Sentry and more
 
 ## FAQ
 

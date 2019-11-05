@@ -31,7 +31,7 @@ phpstan: vendor ## Check PHP code style
 
 .PHONY: phpunit
 phpunit: vendor ## Run PhpUnit tests
-	vendor/bin/phpunit -v --testdox
+	vendor/bin/phpunit -v
 
 .PHONY: php-cs-fixer-check
 cs-check: vendor ## Check php code style

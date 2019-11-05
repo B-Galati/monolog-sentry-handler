@@ -2,7 +2,7 @@
 
 >:information_source:
 >
->- It was written for Symfony 4.
+>- It was written for Symfony 4.4.
 >- Its main purpose is to give ideas of how to integrate this handler in a Symfony project
 
 This guide proposed an opinionated solution to integrate Sentry in a Symfony project.
@@ -42,10 +42,10 @@ It provides the following benefits:
 
 ## Step 1: Configure Sentry Hub
 
-Symfony http client is required:
+Symfony http client is suggested because of its native async capabilities:
 
 ```
-composer require symfony/http-client
+composer require symfony/http-client nyholm/psr7 guzzlehttp/promises
 ```
 
 Let's configure the Sentry Hub with a factory. It gives full flexibility in terms of configuration.
@@ -54,22 +54,13 @@ Let's configure the Sentry Hub with a factory. It gives full flexibility in term
 <?php
 
 use App\Kernel;
-use Http\Client\Exception\NetworkException;
-use Http\Client\Exception\RequestException;
-use Http\Client\HttpAsyncClient;
-use Http\Client\Promise\HttpFulfilledPromise;
-use Http\Client\Promise\HttpRejectedPromise;
-use Nyholm\Psr7\Factory\Psr17Factory;
-use Psr\Http\Client\NetworkExceptionInterface;
-use Psr\Http\Client\RequestExceptionInterface;
-use Psr\Http\Message\RequestInterface;
 use Sentry\ClientBuilder;
 use Sentry\Integration\RequestIntegration;
 use Sentry\SentrySdk;
 use Sentry\State\Hub;
 use Sentry\State\HubInterface;
 use Symfony\Component\HttpClient\HttpClient;
-use Symfony\Component\HttpClient\Psr18Client;
+use Symfony\Component\HttpClient\HttplugClient;
 
 class SentryFactory
 {
@@ -98,7 +89,8 @@ class SentryFactory
             ],
         ]);
 
-        $clientBuilder->setHttpClient(new SentryHttpClient());
+        $client = HttpClient::create(['timeout' => 2]);
+        $clientBuilder->setHttpClient(new HttplugClient($client));
 
         // Enable Sentry RequestIntegration
         $options = $clientBuilder->getOptions();
@@ -108,43 +100,6 @@ class SentryFactory
 
         // A global HubInterface must be set otherwise some feature provided by the SDK does not work as they rely on this global state
         return SentrySdk::setCurrentHub(new Hub($client));
-    }
-}
-
-/**
- * @see https://github.com/symfony/symfony/blob/4.4/src/Symfony/Component/HttpClient/HttplugClient.php
- *
- * Beware of the following issue with the default HTTP that comes with the Sentry SDK
- * @see https://github.com/getsentry/sentry-php/issues/878
- */
-class SentryHttpClient implements HttpAsyncClient
-{
-    private $client;
-
-    public function __construct()
-    {
-        $factory = new Psr17Factory();
-
-        // DO NOT use the http client from Symfony or you could turn into an infinite loop depending on your monolog config and the if logging of HTTP request is enabled or not
-        $client = HttpClient::create(['timeout' => 2]);
-
-        $this->client = new Psr18Client($client, $factory, $factory);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function sendAsyncRequest(RequestInterface $request)
-    {
-        try {
-            $response = $this->client->sendRequest($request);
-        } catch (RequestExceptionInterface $e) {
-            return new HttpRejectedPromise(new RequestException($e->getMessage(), $request, $e));
-        } catch (NetworkExceptionInterface $e) {
-            return new HttpRejectedPromise(new NetworkException($e->getMessage(), $request, $e));
-        }
-
-        return new HttpFulfilledPromise($response);
     }
 }
 ```
