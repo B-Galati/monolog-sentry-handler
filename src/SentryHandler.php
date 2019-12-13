@@ -52,7 +52,7 @@ class SentryHandler extends AbstractProcessingHandler
         $main = array_reduce(
             $records,
             static function ($highest, $record) {
-                if ($record['level'] > $highest['level']) {
+                if ($highest === null || $record['level'] > $highest['level']) {
                     return $record;
                 }
 
