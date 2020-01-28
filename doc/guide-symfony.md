@@ -54,12 +54,20 @@ Let's configure the Sentry Hub with a factory. It gives full flexibility in term
 ```php
 <?php
 
+namespace App;
+
 use App\Kernel;
+use Jean85\PrettyVersions;
+use Nyholm\Psr7\Factory\HttplugFactory;
+use Nyholm\Psr7\Factory\Psr17Factory;
+use Sentry\Client;
 use Sentry\ClientBuilder;
+use Sentry\HttpClient\HttpClientFactory;
 use Sentry\Integration\RequestIntegration;
 use Sentry\SentrySdk;
 use Sentry\State\Hub;
 use Sentry\State\HubInterface;
+use Sentry\Transport\DefaultTransportFactory;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\HttpClient\HttplugClient;
 
@@ -73,9 +81,9 @@ class SentryFactory
         string $cacheDir
     ): HubInterface {
         $clientBuilder = ClientBuilder::create([
-            'dsn'                  => $dsn,
+            'dsn'                  => $dsn ?: null,
             'environment'          => $environment, // I.e.: staging, testing, production, etc.
-            'project_root'         => $projectRoot,
+            'in_app_include'       => [$projectRoot],
             'in_app_exclude'       => [$cacheDir, "$projectRoot/vendor"],
             'prefixes'             => [$projectRoot],
             'release'              => $release,
@@ -90,8 +98,21 @@ class SentryFactory
             ],
         ]);
 
-        $client = HttpClient::create(['timeout' => 2]);
-        $clientBuilder->setHttpClient(new HttplugClient($client));
+        $client       = HttpClient::create(['timeout' => 2]);
+        $psr17Factory = new Psr17Factory();
+        $httpClient   = new HttplugClient($client, $psr17Factory, $psr17Factory);
+
+        $httpPlugFactory   = new HttplugFactory();
+        $httpClientFactory = new HttpClientFactory(
+            $httpPlugFactory,
+            $httpPlugFactory,
+            $httpPlugFactory,
+            $httpClient,
+            Client::SDK_IDENTIFIER,
+            PrettyVersions::getVersion('sentry/sentry')->getPrettyVersion()
+        );
+
+        $clientBuilder->setTransportFactory(new DefaultTransportFactory($httpPlugFactory, $httpClientFactory));
 
         // Enable Sentry RequestIntegration
         $options = $clientBuilder->getOptions();
@@ -117,7 +138,7 @@ services:
     BGalati\MonologSentryHandler\SentryHandler: ~
 
     Sentry\State\HubInterface:
-        factory: 'App\Common\Infrastructure\SentryFactory:create'
+        factory: ['@App\SentryFactory', 'create']
         arguments:
             $dsn: "%env(SENTRY_DSN)%"
             $environment: "%env(ENVIRONMENT)%"
@@ -175,6 +196,8 @@ from the official Sentry Symfony bundle actually. It registers:
 ```php
 <?php
 
+namespace App;
+
 use Psr\Log\LoggerInterface;
 use Sentry\State\HubInterface;
 use Sentry\State\Scope;
@@ -216,7 +239,7 @@ class SentryListener implements EventSubscriberInterface
 
         $this->hub->configureScope(
             static function (Scope $scope) use ($userData): void {
-                $scope->setUser($userData);
+                $scope->setUser($userData, true);
             }
         );
     }
