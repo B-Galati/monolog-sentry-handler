@@ -1,7 +1,16 @@
 includes:
     - vendor/phpstan/phpstan-phpunit/extension.neon
     - vendor/phpstan/phpstan-phpunit/rules.neon
-    - vendor/jangregor/phpstan-prophecy/src/extension.neon
+    - vendor/jangregor/phpstan-prophecy/extension.neon
 parameters:
     inferPrivatePropertyTypeFromConstructor: true
     tipsOfTheDay: false
+    checkMissingIterableValueType: false
+
+    level: 8
+    paths: [src, tests]
+
+    ignoreErrors:
+        - message: "#^Method .*\\\\SpyTransport\\:\\:getSpiedEventsAsArray\\(\\) should return array\\(.*\\) but returns array\\(.*\\)\\.$#"
+          count: 1
+          path: tests/SentryHandlerTest.php
