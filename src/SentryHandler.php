@@ -15,7 +15,14 @@ use Sentry\State\Scope;
 
 class SentryHandler extends AbstractProcessingHandler
 {
+    /**
+     * @var HubInterface
+     */
     protected $hub;
+
+    /**
+     * @var array
+     */
     private $breadcrumbsBuffer = [];
 
     /**

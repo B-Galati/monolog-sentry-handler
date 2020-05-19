@@ -27,7 +27,7 @@ composer-validate: vendor ## Validate composer.json file
 
 .PHONY: phpstan
 phpstan: vendor ## Check PHP code style
-	vendor/bin/phpstan analyse -l7 -- src tests
+	vendor/bin/phpstan analyse
 
 .PHONY: phpunit
 phpunit: vendor ## Run PhpUnit tests

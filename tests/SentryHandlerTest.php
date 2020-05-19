@@ -24,7 +24,14 @@ class SentryHandlerTest extends TestCase
 {
     use PHPMatcherAssertions;
 
+    /**
+     * @var Hub
+     */
     private $hub;
+
+    /**
+     * @var SpyTransport
+     */
     private $transport;
 
     protected function setUp(): void
@@ -41,8 +48,7 @@ class SentryHandlerTest extends TestCase
 
     protected function tearDown(): void
     {
-        $this->hub       = null;
-        $this->transport = null;
+        unset($this->hub, $this->transport);
     }
 
     public function testHandle(): void
@@ -386,7 +392,7 @@ class SentryHandlerTest extends TestCase
 
     private function assertCapturedEvent(Severity $severity, string $message, array $extra, \Exception $exception = null, array $breadcrumbs = []): void
     {
-        $event = $this->transport->spiedEvent->toArray();
+        $event = $this->transport->getSpiedEventsAsArray();
 
         if (null !== $exception) {
             $this->assertCount(1, $event['exception']['values']);
@@ -457,6 +463,9 @@ class SentryHandlerTest extends TestCase
 
 class SpySentryHandler extends SentryHandler
 {
+    /**
+     * @var bool
+     */
     public $afterWriteCalled = false;
 
     /** {@inheritdoc} */
@@ -504,22 +513,28 @@ class SpyTransport extends NullTransport implements ClosableTransportInterface
         $this->isFlushed  = false;
     }
 
-    public function getBreadcrumbsAsArray(): array
+    /**
+     * @return array{
+     *     "exception": array,
+     *     "breadcrumbs": array,
+     *     "message": string,
+     *     "level": string,
+     *     "event_id": string,
+     *     "timestamp": int,
+     *     "platform": string,
+     *     "server_name": string,
+     *     "extra": array,
+     *     "sdk": string,
+     *     "contexts": array
+     * }
+     */
+    public function getSpiedEventsAsArray(): array
     {
         if (null === $this->spiedEvent) {
             throw new \RuntimeException('No spied scope');
         }
 
-        return array_map(
-            function (Breadcrumb $breadcrumb) {
-                $array = $breadcrumb->toArray();
-
-                unset($array['timestamp']);
-
-                return $array;
-            },
-            $this->spiedEvent->getBreadcrumbs()
-        );
+        return $this->spiedEvent->toArray();
     }
 
     public function close(?int $timeout = null): PromiseInterface
