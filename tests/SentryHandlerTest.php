@@ -11,14 +11,16 @@ use GuzzleHttp\Promise\PromiseInterface;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
-use Sentry\Breadcrumb;
 use Sentry\ClientBuilder;
 use Sentry\Event;
+use Sentry\Options;
 use Sentry\Severity;
 use Sentry\State\Hub;
 use Sentry\State\Scope;
 use Sentry\Transport\ClosableTransportInterface;
 use Sentry\Transport\NullTransport;
+use Sentry\Transport\TransportFactoryInterface;
+use Sentry\Transport\TransportInterface;
 
 class SentryHandlerTest extends TestCase
 {
@@ -39,7 +41,7 @@ class SentryHandlerTest extends TestCase
         $this->transport = new SpyTransport();
 
         $clientBuilder = ClientBuilder::create(['default_integrations' => false]);
-        $clientBuilder->setTransport($this->transport);
+        $clientBuilder->setTransportFactory(new FakeTransportFactory($this->transport));
 
         $client = $clientBuilder->getClient();
 
@@ -515,18 +517,18 @@ class SpyTransport extends NullTransport implements ClosableTransportInterface
 
     /**
      * @return array{
-     *     "exception": array,
-     *     "breadcrumbs": array,
-     *     "message": string,
-     *     "level": string,
-     *     "event_id": string,
-     *     "timestamp": int,
-     *     "platform": string,
-     *     "server_name": string,
-     *     "extra": array,
-     *     "sdk": string,
-     *     "contexts": array
-     * }
+     *                "exception": array,
+     *                "breadcrumbs": array,
+     *                "message": string,
+     *                "level": string,
+     *                "event_id": string,
+     *                "timestamp": int,
+     *                "platform": string,
+     *                "server_name": string,
+     *                "extra": array,
+     *                "sdk": string,
+     *                "contexts": array
+     *                }
      */
     public function getSpiedEventsAsArray(): array
     {
@@ -542,5 +544,23 @@ class SpyTransport extends NullTransport implements ClosableTransportInterface
         $this->isFlushed = true;
 
         return new FulfilledPromise(true);
+    }
+}
+
+class FakeTransportFactory implements TransportFactoryInterface
+{
+    /**
+     * @var SpyTransport
+     */
+    private $transport;
+
+    public function __construct(SpyTransport $transport)
+    {
+        $this->transport = $transport;
+    }
+
+    public function create(Options $options): TransportInterface
+    {
+        return $this->transport;
     }
 }
