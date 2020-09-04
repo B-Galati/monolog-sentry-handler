@@ -3,8 +3,6 @@ SHELL := /bin/bash
 COMPOSER_INSTALL_FLAGS ?=
 COMPOSER_UPDATE_FLAGS ?=
 
-SYMFONY_DEPRECATIONS_HELPER := "max[self]=0"
-
 .DEFAULT_GOAL := help
 .PHONY: help
 help:
