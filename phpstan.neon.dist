@@ -9,8 +9,3 @@ parameters:
 
     level: 8
     paths: [src, tests]
-
-    ignoreErrors:
-        - message: "#^Method .*\\\\SpyTransport\\:\\:getSpiedEventsAsArray\\(\\) should return array\\(.*\\) but returns array\\(.*\\)\\.$#"
-          count: 1
-          path: tests/SentryHandlerTest.php

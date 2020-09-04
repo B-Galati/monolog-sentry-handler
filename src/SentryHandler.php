@@ -55,6 +55,10 @@ class SentryHandler extends AbstractProcessingHandler
             }
         );
 
+        if (!$records) {
+            return;
+        }
+
         // the record with the highest severity is the "main" one
         $main = array_reduce(
             $records,
