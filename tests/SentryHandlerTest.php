@@ -392,6 +392,35 @@ class SentryHandlerTest extends TestCase
         );
     }
 
+    public function testHandleBatchWithHighLevelOfFilteringDoesNotCrash(): void
+    {
+        $handler = $this->createSentryHandler(Logger::EMERGENCY);
+
+        $records = [
+            [
+                'message'    => 'Info message',
+                'context'    => ['exception' => new \LogicException()],
+                'level'      => $level = Logger::INFO,
+                'level_name' => Logger::getLevelName($level),
+                'channel'    => 'test',
+                'extra'      => [],
+            ],
+            [
+                'message'    => 'Critical message',
+                'context'    => ['exception' => $exception = new \LogicException('Exception of critical level')],
+                'level'      => $level = Logger::CRITICAL,
+                'level_name' => Logger::getLevelName($level),
+                'channel'    => 'test',
+                'extra'      => [],
+            ],
+        ];
+
+        $handler->handleBatch($records);
+
+        $this->assertFalse($handler->afterWriteCalled);
+        $this->assertNull($this->transport->spiedEvent);
+    }
+
     private function assertCapturedEvent(Severity $severity, string $message, array $extra, \Exception $exception = null, array $breadcrumbs = []): void
     {
         $event = $this->transport->getSpiedEventsAsArray();
@@ -516,19 +545,7 @@ class SpyTransport extends NullTransport implements ClosableTransportInterface
     }
 
     /**
-     * @return array{
-     *                "exception": array,
-     *                "breadcrumbs": array,
-     *                "message": string,
-     *                "level": string,
-     *                "event_id": string,
-     *                "timestamp": int,
-     *                "platform": string,
-     *                "server_name": string,
-     *                "extra": array,
-     *                "sdk": string,
-     *                "contexts": array
-     *                }
+     * @return array<string, mixed>
      */
     public function getSpiedEventsAsArray(): array
     {
