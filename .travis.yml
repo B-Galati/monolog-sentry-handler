@@ -17,6 +17,7 @@ matrix:
     - php: 7.4
       env: CS=1
     - php: nightly
+      env: STABILITY="dev"
 
   allow_failures:
     - php: nightly
@@ -27,6 +28,7 @@ cache:
 
 before_install:
   - phpenv config-rm xdebug.ini || true
+  - if ! [ -z "${STABILITY}" ]; then composer config minimum-stability ${STABILITY}; fi;
   - composer global require --no-progress --no-scripts --no-plugins symfony/flex dev-master
   - make vendor
 
