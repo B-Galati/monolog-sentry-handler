@@ -1,13 +1,13 @@
 language: php
+os: linux
 dist: bionic
-sudo: false
 
 env:
   global:
     - COMPOSER_INSTALL_FLAGS="--no-interaction --no-progress --prefer-dist"
     - COMPOSER_UPDATE_FLAGS="--no-interaction --no-progress --prefer-dist"
 
-matrix:
+jobs:
   fast_finish: true
   include:
     - php: 7.1
@@ -17,7 +17,12 @@ matrix:
     - php: 7.4
       env: CS=1
     - php: nightly
-      env: STABILITY="dev"
+      env: STABILITY=dev SYMFONY_DEPRECATIONS_HELPER=weak
+      install:
+        - composer config platform.php 7.4.99
+        - make vendor
+      script:
+        - make phpunit
 
   allow_failures:
     - php: nightly
@@ -30,6 +35,8 @@ before_install:
   - phpenv config-rm xdebug.ini || true
   - if ! [ -z "${STABILITY}" ]; then composer config minimum-stability ${STABILITY}; fi;
   - composer global require --no-progress --no-scripts --no-plugins symfony/flex dev-master
+
+install:
   - make vendor
 
 script:
