@@ -35,7 +35,7 @@ cache:
 before_install:
   - phpenv config-rm xdebug.ini || true
   - if ! [ -z "${STABILITY}" ]; then composer config minimum-stability ${STABILITY}; fi;
-  - composer global require --no-progress --no-scripts --no-plugins symfony/flex dev-master
+  - composer global require --no-progress --no-scripts --no-plugins symfony/flex dev-main
 
 install:
   - make vendor
