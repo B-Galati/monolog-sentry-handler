@@ -125,6 +125,39 @@ class SentryHandler extends AbstractProcessingHandler
 
         $this->afterWrite();
     }
+
+    /**
+     * Extension point.
+     *
+     * This method is called when Sentry event is captured by the handler.
+     * Override it if you want to add custom data to Sentry $scope.
+     *
+     * @param Scope $scope Sentry scope where you can add custom data
+     * @param array $record Current monolog record
+     * @param SentryEvent $sentryEvent Current sentry event that will be captured
+     */
+    protected function processScope(Scope $scope, array $record, SentryEvent $sentryEvent): void
+    {
+    }
+
+    /**
+     * Extension point.
+     *
+     * Overridable method that for example can be used to:
+     *   - disable Sentry event flush
+     *   - add some custom logic after monolog write process
+     *   - ...
+     */
+
+    protected function afterWrite(): void
+    {
+        $client = $this->hub->getClient();
+
+        if ($client instanceof ClientInterface) {
+            $client->flush();
+        }
+    }
+
     /**
      * Translates the Monolog level into the Sentry severity.
      *
@@ -146,6 +179,7 @@ class SentryHandler extends AbstractProcessingHandler
                 return Severity::fatal();
         }
     }
+
     /**
      * Translates the Monolog level into the Sentry breadcrumb level.
      *
@@ -167,6 +201,7 @@ class SentryHandler extends AbstractProcessingHandler
                 return Breadcrumb::LEVEL_FATAL;
         }
     }
+
     /**
      * Translates the Monolog level into the Sentry breadcrumb type.
      *
@@ -179,34 +214,5 @@ class SentryHandler extends AbstractProcessingHandler
         }
 
         return Breadcrumb::TYPE_DEFAULT;
-    }
-    /**
-     * Extension point.
-     *
-     * This method is called when Sentry event is captured by the handler.
-     * Override it if you want to add custom data to Sentry $scope.
-     *
-     * @param Scope $scope Sentry scope where you can add custom data
-     * @param array $record Current monolog record
-     * @param SentryEvent $sentryEvent Current sentry event that will be captured
-     */
-    protected function processScope(Scope $scope, array $record, SentryEvent $sentryEvent): void
-    {
-    }
-    /**
-     * Extension point.
-     *
-     * Overridable method that for example can be used to:
-     *   - disable Sentry event flush
-     *   - add some custom logic after monolog write process
-     *   - ...
-     */
-    protected function afterWrite(): void
-    {
-        $client = $this->hub->getClient();
-
-        if ($client instanceof ClientInterface) {
-            $client->flush();
-        }
     }
 }
