@@ -8,10 +8,13 @@ use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Logger;
 use Sentry\Breadcrumb;
-use Sentry\FlushableClientInterface;
+use Sentry\ClientInterface;
+use Sentry\Event as SentryEvent;
+use Sentry\ExceptionDataBag;
 use Sentry\Severity;
 use Sentry\State\HubInterface;
 use Sentry\State\Scope;
+use Throwable;
 
 class SentryHandler extends AbstractProcessingHandler
 {
@@ -46,7 +49,6 @@ class SentryHandler extends AbstractProcessingHandler
             return;
         }
 
-        // filter records
         $records = array_filter(
             $records,
             function ($record) {
@@ -89,32 +91,37 @@ class SentryHandler extends AbstractProcessingHandler
      */
     protected function write(array $record): void
     {
-        $sentryEvent = [
-            'level'   => $sentryLevel = $this->getSeverityFromLevel($record['level']),
-            'message' => (new LineFormatter('%channel%.%level_name%: %message%'))->format($record),
-        ];
+        $sentryEvent = SentryEvent::createEvent();
+        $sentryEvent->setLevel($sentryLevel = $this->getSeverityFromLevel((int) $record['level']));
+        $sentryEvent->setMessage((new LineFormatter('%channel%.%level_name%: %message%'))->format($record));
 
-        if (isset($record['context']['exception']) && $record['context']['exception'] instanceof \Throwable) {
-            $sentryEvent['exception'] = $record['context']['exception'];
+        if (isset($record['context']['exception']) && $record['context']['exception'] instanceof Throwable) {
+            $sentryEvent->setExceptions([new ExceptionDataBag($record['context']['exception'])]);
         }
 
-        $this->hub->withScope(function (Scope $scope) use ($record, $sentryEvent, $sentryLevel): void {
-            $scope->setLevel($sentryLevel);
-            $scope->setExtra('monolog.formatted', $record['formatted'] ?? '');
+        $this->hub->withScope(
+            function (Scope $scope) use ($record, $sentryEvent, $sentryLevel): void {
+                $scope->setLevel($sentryLevel);
+                $scope->setExtra('monolog.formatted', $record['formatted'] ?? '');
 
-            foreach ($this->breadcrumbsBuffer as $breadcrumbRecord) {
-                $scope->addBreadcrumb(new Breadcrumb(
-                    $this->getBreadcrumbLevelFromLevel($breadcrumbRecord['level']),
-                    $this->getBreadcrumbTypeFromLevel($breadcrumbRecord['level']),
-                    $breadcrumbRecord['channel'] ?? 'N/A',
-                    $breadcrumbRecord['formatted'] ?? 'N/A'
-                ));
-            }
+                foreach ($this->breadcrumbsBuffer as $breadcrumbRecord) {
+                    $context = array_merge($breadcrumbRecord['context'], $breadcrumbRecord['extra']);
 
-            $this->processScope($scope, $record, $sentryEvent);
+                    $scope->addBreadcrumb(
+                        new Breadcrumb(
+                            $this->getBreadcrumbLevelFromLevel((int) $breadcrumbRecord['level']),
+                            $this->getBreadcrumbTypeFromLevel((int) $breadcrumbRecord['level']),
+                            (string) $breadcrumbRecord['channel'] ?: 'N/A',
+                            (string) $breadcrumbRecord['message'] ?: 'N/A',
+                            $context
+                        )
+                    );
+                }
 
-            $this->hub->captureEvent($sentryEvent);
-        });
+                $this->processScope($scope, $record, $sentryEvent);
+
+                $this->hub->captureEvent($sentryEvent);
+            });
 
         $this->afterWrite();
     }
@@ -125,11 +132,11 @@ class SentryHandler extends AbstractProcessingHandler
      * This method is called when Sentry event is captured by the handler.
      * Override it if you want to add custom data to Sentry $scope.
      *
-     * @param Scope $scope       Sentry scope where you can add custom data
-     * @param array $record      Current monolog record
-     * @param array $sentryEvent Current sentry event that will be captured
+     * @param Scope       $scope       Sentry scope where you can add custom data
+     * @param array       $record      Current monolog record
+     * @param SentryEvent $sentryEvent Current sentry event that will be captured
      */
-    protected function processScope(Scope $scope, array $record, array $sentryEvent): void
+    protected function processScope(Scope $scope, array $record, SentryEvent $sentryEvent): void
     {
     }
 
@@ -145,7 +152,7 @@ class SentryHandler extends AbstractProcessingHandler
     {
         $client = $this->hub->getClient();
 
-        if ($client instanceof FlushableClientInterface) {
+        if ($client instanceof ClientInterface) {
             $client->flush();
         }
     }
