@@ -20,7 +20,7 @@ use Sentry\Response;
 use Sentry\ResponseStatus;
 use Sentry\SentrySdk;
 use Sentry\Severity;
-use Sentry\State\Hub;
+use Sentry\State\HubInterface;
 use Sentry\State\Scope;
 use Sentry\Transport\TransportFactoryInterface;
 use Sentry\Transport\TransportInterface;
@@ -30,7 +30,7 @@ class SentryHandlerTest extends TestCase
     use PHPMatcherAssertions;
 
     /**
-     * @var Hub
+     * @var HubInterface
      */
     private $hub;
 
@@ -46,7 +46,7 @@ class SentryHandlerTest extends TestCase
         $clientBuilder = ClientBuilder::create(
             [
                 'default_integrations' => false,
-                'integrations' => [
+                'integrations'         => [
                     // In order to get OS and runtime context we must enable this
                     new EnvironmentIntegration(),
                 ],
@@ -209,7 +209,7 @@ class SentryHandlerTest extends TestCase
                     'timestamp' => '@double@',
                     'data'      => [
                         'exception' => '@*@',
-                        "extra-info"
+                        'extra-info',
                     ],
                 ],
                 [
@@ -218,7 +218,7 @@ class SentryHandlerTest extends TestCase
                     'level'     => 'error',
                     'message'   => 'Error Message',
                     'timestamp' => '@double@',
-                    'data'      => ["extra-error"],
+                    'data'      => ['extra-error'],
                 ],
                 [
                     'type'      => 'default',
@@ -226,7 +226,7 @@ class SentryHandlerTest extends TestCase
                     'level'     => 'debug',
                     'message'   => 'Debug message',
                     'timestamp' => '@double@',
-                    'data'      => ["extra-debug"],
+                    'data'      => ['extra-debug'],
                 ],
                 [
                     'type'      => 'error',
@@ -234,7 +234,7 @@ class SentryHandlerTest extends TestCase
                     'level'     => 'fatal',
                     'message'   => 'Emergency message',
                     'timestamp' => '@double@',
-                    'data'      => ["extra-emerg"],
+                    'data'      => ['extra-emerg'],
                 ],
                 [
                     'type'      => 'default',
@@ -242,7 +242,7 @@ class SentryHandlerTest extends TestCase
                     'level'     => 'warning',
                     'message'   => 'Warning message',
                     'timestamp' => '@double@',
-                    'data'      => ["extra-warn"],
+                    'data'      => ['extra-warn'],
                 ],
                 [
                     'type'      => 'default',
@@ -250,7 +250,7 @@ class SentryHandlerTest extends TestCase
                     'level'     => 'info',
                     'message'   => 'Notice message',
                     'timestamp' => '@double@',
-                    'data'      => ["extra-notice"],
+                    'data'      => ['extra-notice'],
                 ],
                 [
                     'type'      => 'error',
@@ -258,7 +258,7 @@ class SentryHandlerTest extends TestCase
                     'level'     => 'fatal',
                     'message'   => 'Alert message',
                     'timestamp' => '@double@',
-                    'data'      => ["extra-alert"],
+                    'data'      => ['extra-alert'],
                 ],
                 [
                     'type'      => 'error',
@@ -268,7 +268,7 @@ class SentryHandlerTest extends TestCase
                     'timestamp' => '@double@',
                     'data'      => [
                         'exception' => '@*@',
-                        "extra-critical"
+                        'extra-critical',
                     ],
                 ],
             ]
@@ -362,7 +362,7 @@ class SentryHandlerTest extends TestCase
                     'message'   => 'Critical message',
                     'timestamp' => '@double@',
                     'data'      => [
-                        'exception' => '@*@'
+                        'exception' => '@*@',
                     ],
                 ],
             ]
@@ -471,12 +471,12 @@ class SentryHandlerTest extends TestCase
                     array_map(
                         static function (Breadcrumb $breadcrumb) {
                             return [
-                                'type' => $breadcrumb->getType(),
-                                'category' => $breadcrumb->getCategory(),
-                                'level' => $breadcrumb->getLevel(),
-                                'message' => $breadcrumb->getMessage(),
-                                'timestamp' => (double) $breadcrumb->getTimestamp(),
-                                'data' => $breadcrumb->getMetadata(),
+                                'type'      => $breadcrumb->getType(),
+                                'category'  => $breadcrumb->getCategory(),
+                                'level'     => $breadcrumb->getLevel(),
+                                'message'   => $breadcrumb->getMessage(),
+                                'timestamp' => (float) $breadcrumb->getTimestamp(),
+                                'data'      => $breadcrumb->getMetadata(),
                             ];
                         },
                         $event->getBreadcrumbs()
@@ -490,12 +490,16 @@ class SentryHandlerTest extends TestCase
         $this->assertSame('sentry.php', $event->getSdkIdentifier());
         $this->assertMatchesPattern('@string@', $event->getSdkVersion());
 
-        $this->assertMatchesPattern('@string@', $event->getOsContext()->getName());
-        $this->assertMatchesPattern('@string@', $event->getOsContext()->getVersion());
-        $this->assertMatchesPattern('@string@', $event->getOsContext()->getBuild());
-        $this->assertMatchesPattern('@string@', $event->getOsContext()->getKernelVersion());
-        $this->assertMatchesPattern('php', $event->getRuntimeContext()->getName());
-        $this->assertMatchesPattern('@string@', $event->getRuntimeContext()->getVersion());
+        if (null !== ($os = $event->getOsContext())) {
+            $this->assertMatchesPattern('@string@', $os->getName());
+            $this->assertMatchesPattern('@string@', $os->getVersion());
+            $this->assertMatchesPattern('@string@', $os->getBuild());
+            $this->assertMatchesPattern('@string@', $os->getKernelVersion());
+        }
+        if (null !== ($runtime = $event->getRuntimeContext())) {
+            $this->assertMatchesPattern('php', $runtime->getName());
+            $this->assertMatchesPattern('@string@', $runtime->getVersion());
+        }
     }
 
     private function createSentryHandler(int $level = null): SpySentryHandler

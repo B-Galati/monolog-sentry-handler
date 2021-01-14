@@ -118,10 +118,10 @@ class SentryHandler extends AbstractProcessingHandler
                     );
                 }
 
-            $this->processScope($scope, $record, $sentryEvent);
+                $this->processScope($scope, $record, $sentryEvent);
 
-            $this->hub->captureEvent($sentryEvent);
-        });
+                $this->hub->captureEvent($sentryEvent);
+            });
 
         $this->afterWrite();
     }
@@ -132,8 +132,8 @@ class SentryHandler extends AbstractProcessingHandler
      * This method is called when Sentry event is captured by the handler.
      * Override it if you want to add custom data to Sentry $scope.
      *
-     * @param Scope $scope Sentry scope where you can add custom data
-     * @param array $record Current monolog record
+     * @param Scope       $scope       Sentry scope where you can add custom data
+     * @param array       $record      Current monolog record
      * @param SentryEvent $sentryEvent Current sentry event that will be captured
      */
     protected function processScope(Scope $scope, array $record, SentryEvent $sentryEvent): void
@@ -148,7 +148,6 @@ class SentryHandler extends AbstractProcessingHandler
      *   - add some custom logic after monolog write process
      *   - ...
      */
-
     protected function afterWrite(): void
     {
         $client = $this->hub->getClient();
