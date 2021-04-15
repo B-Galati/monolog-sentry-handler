@@ -151,15 +151,6 @@ final class SentryHandler extends AbstractProcessingHandler
     {
     }
 
-    /**
-     * @todo: Allow such extensions via injecting processors for scope, not using inheritance (or just delete this method)
-     * Extension point.
-     *
-     * Overridable method that for example can be used to:
-     *   - disable Sentry event flush
-     *   - add some custom logic after monolog write process
-     *   - ...
-     */
     private function afterWrite(): void
     {
         $client = $this->hub->getClient();
