@@ -2,28 +2,25 @@
 
 declare(strict_types=1);
 
-namespace BGalati\MonologSentryHandler;
+namespace Homeapp\MonologSentryHandler;
 
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Logger;
 use Sentry\Breadcrumb;
-use Sentry\FlushableClientInterface;
+use Sentry\ClientInterface;
+use Sentry\Event as SentryEvent;
+use Sentry\ExceptionDataBag;
 use Sentry\Severity;
 use Sentry\State\HubInterface;
 use Sentry\State\Scope;
+use Throwable;
 
 class SentryHandler extends AbstractProcessingHandler
 {
-    /**
-     * @var HubInterface
-     */
-    protected $hub;
+    protected HubInterface $hub;
 
-    /**
-     * @var array
-     */
-    private $breadcrumbsBuffer = [];
+    private array $breadcrumbsBuffer = [];
 
     /**
      * @param HubInterface $hub    The sentry hub used to send event to Sentry
@@ -42,20 +39,12 @@ class SentryHandler extends AbstractProcessingHandler
      */
     public function handleBatch(array $records): void
     {
-        if (!$records) {
-            return;
-        }
-
-        // filter records
         $records = array_filter(
             $records,
-            function ($record) {
-                // Keep record that matches the minimum level
-                return $record['level'] >= $this->level;
-            }
+            fn ($record) => $record['level'] >= $this->level
         );
 
-        if (!$records) {
+        if (empty($records)) {
             return;
         }
 
@@ -63,15 +52,10 @@ class SentryHandler extends AbstractProcessingHandler
         $main = array_reduce(
             $records,
             static function ($highest, $record) {
-                if (null === $highest || $record['level'] > $highest['level']) {
-                    return $record;
-                }
-
-                return $highest;
+                return $record['level'] >= ($highest['level'] ?? $record['level']) ? $record : $highest;
             }
         );
 
-        // the other ones are added as a context items
         foreach ($records as $record) {
             $record              = $this->processRecord($record);
             $record['formatted'] = $this->getFormatter()->format($record);
@@ -89,32 +73,38 @@ class SentryHandler extends AbstractProcessingHandler
      */
     protected function write(array $record): void
     {
-        $sentryEvent = [
-            'level'   => $sentryLevel = $this->getSeverityFromLevel($record['level']),
-            'message' => (new LineFormatter('%channel%.%level_name%: %message%'))->format($record),
-        ];
+        $sentryEvent = SentryEvent::createEvent();
+        $sentryLevel = $this->getSeverityFromLevel((int) $record['level']);
+        $sentryEvent->setLevel($sentryLevel);
+        $sentryEvent->setMessage((new LineFormatter('%channel%.%level_name%: %message%'))->format($record));
 
-        if (isset($record['context']['exception']) && $record['context']['exception'] instanceof \Throwable) {
-            $sentryEvent['exception'] = $record['context']['exception'];
+        if (isset($record['context']['exception']) && $record['context']['exception'] instanceof Throwable) {
+            $sentryEvent->setExceptions([new ExceptionDataBag($record['context']['exception'])]);
         }
 
-        $this->hub->withScope(function (Scope $scope) use ($record, $sentryEvent, $sentryLevel): void {
-            $scope->setLevel($sentryLevel);
-            $scope->setExtra('monolog.formatted', $record['formatted'] ?? '');
+        $this->hub->withScope(
+            function (Scope $scope) use ($record, $sentryEvent, $sentryLevel): void {
+                $scope->setLevel($sentryLevel);
+                $scope->setExtra('monolog.formatted', $record['formatted'] ?? '');
 
-            foreach ($this->breadcrumbsBuffer as $breadcrumbRecord) {
-                $scope->addBreadcrumb(new Breadcrumb(
-                    $this->getBreadcrumbLevelFromLevel($breadcrumbRecord['level']),
-                    $this->getBreadcrumbTypeFromLevel($breadcrumbRecord['level']),
-                    $breadcrumbRecord['channel'] ?? 'N/A',
-                    $breadcrumbRecord['formatted'] ?? 'N/A'
-                ));
-            }
+                foreach ($this->breadcrumbsBuffer as $breadcrumbRecord) {
+                    $context = array_merge($breadcrumbRecord['context'], $breadcrumbRecord['extra']);
 
-            $this->processScope($scope, $record, $sentryEvent);
+                    $scope->addBreadcrumb(
+                        new Breadcrumb(
+                            $this->getBreadcrumbLevelFromLevel((int) $breadcrumbRecord['level']),
+                            $this->getBreadcrumbTypeFromLevel((int) $breadcrumbRecord['level']),
+                            (string) $breadcrumbRecord['channel'] ?: 'N/A',
+                            (string) $breadcrumbRecord['message'] ?: 'N/A',
+                            $context
+                        )
+                    );
+                }
 
-            $this->hub->captureEvent($sentryEvent);
-        });
+                $this->processScope($scope, $record, $sentryEvent);
+
+                $this->hub->captureEvent($sentryEvent);
+            });
 
         $this->afterWrite();
     }
@@ -125,11 +115,11 @@ class SentryHandler extends AbstractProcessingHandler
      * This method is called when Sentry event is captured by the handler.
      * Override it if you want to add custom data to Sentry $scope.
      *
-     * @param Scope $scope       Sentry scope where you can add custom data
-     * @param array $record      Current monolog record
-     * @param array $sentryEvent Current sentry event that will be captured
+     * @param Scope       $scope       Sentry scope where you can add custom data
+     * @param array       $record      Current monolog record
+     * @param SentryEvent $sentryEvent Current sentry event that will be captured
      */
-    protected function processScope(Scope $scope, array $record, array $sentryEvent): void
+    protected function processScope(Scope $scope, array $record, SentryEvent $sentryEvent): void
     {
     }
 
@@ -145,7 +135,7 @@ class SentryHandler extends AbstractProcessingHandler
     {
         $client = $this->hub->getClient();
 
-        if ($client instanceof FlushableClientInterface) {
+        if ($client instanceof ClientInterface) {
             $client->flush();
         }
     }

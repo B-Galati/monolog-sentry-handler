@@ -2,23 +2,26 @@
 
 declare(strict_types=1);
 
-namespace BGalati\MonologSentryHandler\Tests;
+namespace Homeapp\MonologSentryHandler\Tests;
 
-use BGalati\MonologSentryHandler\SentryHandler;
+use Homeapp\MonologSentryHandler\SentryHandler;
 use Coduo\PHPMatcher\PHPUnit\PHPMatcherAssertions;
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\PromiseInterface;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
+use Sentry\Breadcrumb;
 use Sentry\ClientBuilder;
 use Sentry\Event;
+use Sentry\Integration\EnvironmentIntegration;
 use Sentry\Options;
+use Sentry\Response;
+use Sentry\ResponseStatus;
+use Sentry\SentrySdk;
 use Sentry\Severity;
-use Sentry\State\Hub;
+use Sentry\State\HubInterface;
 use Sentry\State\Scope;
-use Sentry\Transport\ClosableTransportInterface;
-use Sentry\Transport\NullTransport;
 use Sentry\Transport\TransportFactoryInterface;
 use Sentry\Transport\TransportInterface;
 
@@ -26,26 +29,29 @@ class SentryHandlerTest extends TestCase
 {
     use PHPMatcherAssertions;
 
-    /**
-     * @var Hub
-     */
-    private $hub;
+    private HubInterface $hub;
 
-    /**
-     * @var SpyTransport
-     */
-    private $transport;
+    private SpyTransport $transport;
 
     protected function setUp(): void
     {
         $this->transport = new SpyTransport();
 
-        $clientBuilder = ClientBuilder::create(['default_integrations' => false]);
+        $clientBuilder = ClientBuilder::create(
+            [
+                'default_integrations' => false,
+                'integrations'         => [
+                    // In order to get OS and runtime context we must enable this
+                    new EnvironmentIntegration(),
+                ],
+            ]
+        );
         $clientBuilder->setTransportFactory(new FakeTransportFactory($this->transport));
 
         $client = $clientBuilder->getClient();
 
-        $this->hub = new Hub($client);
+        $this->hub = SentrySdk::getCurrentHub();
+        $this->hub->bindClient($client);
     }
 
     protected function tearDown(): void
@@ -193,65 +199,71 @@ class SentryHandlerTest extends TestCase
                     'type'      => 'default',
                     'category'  => 'chan-info',
                     'level'     => 'info',
-                    'message'   => 'chan-info.INFO: Info message ["extra-info"]',
+                    'message'   => 'Info message',
                     'timestamp' => '@double@',
-                    'data'      => [],
+                    'data'      => [
+                        'exception' => '@*@',
+                        'extra-info',
+                    ],
                 ],
                 [
                     'type'      => 'error',
                     'category'  => 'chan-error',
                     'level'     => 'error',
-                    'message'   => 'chan-error.ERROR: Error Message ["extra-error"]',
+                    'message'   => 'Error Message',
                     'timestamp' => '@double@',
-                    'data'      => [],
+                    'data'      => ['extra-error'],
                 ],
                 [
                     'type'      => 'default',
                     'category'  => 'chan-debug',
                     'level'     => 'debug',
-                    'message'   => 'chan-debug.DEBUG: Debug message ["extra-debug"]',
+                    'message'   => 'Debug message',
                     'timestamp' => '@double@',
-                    'data'      => [],
+                    'data'      => ['extra-debug'],
                 ],
                 [
                     'type'      => 'error',
                     'category'  => 'chan-emerg',
                     'level'     => 'fatal',
-                    'message'   => 'chan-emerg.EMERGENCY: Emergency message ["extra-emerg"]',
+                    'message'   => 'Emergency message',
                     'timestamp' => '@double@',
-                    'data'      => [],
+                    'data'      => ['extra-emerg'],
                 ],
                 [
                     'type'      => 'default',
                     'category'  => 'chan-warn',
                     'level'     => 'warning',
-                    'message'   => 'chan-warn.WARNING: Warning message ["extra-warn"]',
+                    'message'   => 'Warning message',
                     'timestamp' => '@double@',
-                    'data'      => [],
+                    'data'      => ['extra-warn'],
                 ],
                 [
                     'type'      => 'default',
                     'category'  => 'chan-notice',
                     'level'     => 'info',
-                    'message'   => 'chan-notice.NOTICE: Notice message ["extra-notice"]',
+                    'message'   => 'Notice message',
                     'timestamp' => '@double@',
-                    'data'      => [],
+                    'data'      => ['extra-notice'],
                 ],
                 [
                     'type'      => 'error',
                     'category'  => 'chan-alert',
                     'level'     => 'fatal',
-                    'message'   => 'chan-alert.ALERT: Alert message ["extra-alert"]',
+                    'message'   => 'Alert message',
                     'timestamp' => '@double@',
-                    'data'      => [],
+                    'data'      => ['extra-alert'],
                 ],
                 [
                     'type'      => 'error',
                     'category'  => 'chan-critical',
                     'level'     => 'fatal',
-                    'message'   => 'chan-critical.CRITICAL: Critical message ["extra-critical"]',
+                    'message'   => 'Critical message',
                     'timestamp' => '@double@',
-                    'data'      => [],
+                    'data'      => [
+                        'exception' => '@*@',
+                        'extra-critical',
+                    ],
                 ],
             ]
         );
@@ -325,7 +337,7 @@ class SentryHandlerTest extends TestCase
                     'type'      => 'error',
                     'category'  => 'test',
                     'level'     => 'error',
-                    'message'   => 'test.ERROR: Error Message []',
+                    'message'   => 'Error Message',
                     'timestamp' => '@double@',
                     'data'      => [],
                 ],
@@ -333,7 +345,7 @@ class SentryHandlerTest extends TestCase
                     'type'      => 'default',
                     'category'  => 'test',
                     'level'     => 'warning',
-                    'message'   => 'test.WARNING: Warning message []',
+                    'message'   => 'Warning message',
                     'timestamp' => '@double@',
                     'data'      => [],
                 ],
@@ -341,9 +353,11 @@ class SentryHandlerTest extends TestCase
                     'type'      => 'error',
                     'category'  => 'test',
                     'level'     => 'fatal',
-                    'message'   => 'test.CRITICAL: Critical message []',
+                    'message'   => 'Critical message',
                     'timestamp' => '@double@',
-                    'data'      => [],
+                    'data'      => [
+                        'exception' => '@*@',
+                    ],
                 ],
             ]
         );
@@ -384,7 +398,7 @@ class SentryHandlerTest extends TestCase
                     'type'      => 'default',
                     'category'  => 'test',
                     'level'     => 'info',
-                    'message'   => 'test.INFO: Info message []',
+                    'message'   => 'Info message',
                     'timestamp' => '@double@',
                     'data'      => [],
                 ],
@@ -423,59 +437,63 @@ class SentryHandlerTest extends TestCase
 
     private function assertCapturedEvent(Severity $severity, string $message, array $extra, \Exception $exception = null, array $breadcrumbs = []): void
     {
-        $event = $this->transport->getSpiedEventsAsArray();
+        $event = $this->transport->getSpiedEvent();
 
         if (null !== $exception) {
-            $this->assertCount(1, $event['exception']['values']);
-            $this->assertSame(\get_class($exception), $event['exception']['values'][0]['type']);
-            $this->assertSame($exception->getMessage(), $event['exception']['values'][0]['value']);
+            $this->assertCount(1, $event->getExceptions());
+            $exceptionDataBag = $event->getExceptions()[0];
+            $this->assertSame(\get_class($exception), $exceptionDataBag->getType());
+            $this->assertSame($exception->getMessage(), $exceptionDataBag->getValue());
         } else {
-            $this->assertArrayNotHasKey('exception', $event);
+            $this->assertCount(0, $event->getExceptions());
         }
 
         $this->assertTrue($this->transport->isFlushed);
-        $this->assertArrayNotHasKey('tags', $event);
-        $this->assertArrayNotHasKey('user', $event);
-        $this->assertSame($message, $event['message']);
-        $this->assertSame((string) $severity, $event['level']);
-        $this->assertMatchesPattern('@string@', $event['event_id']);
-        $this->assertMatchesPattern('@string@', $event['timestamp']);
-        $this->assertMatchesPattern('@string@', $event['platform']);
-        $this->assertMatchesPattern('@string@', $event['server_name']);
-        $this->assertMatchesPattern(['processScope' => 'called'] + $extra, $event['extra']);
+        $this->assertCount(0, $event->getTags());
+        $this->assertNull($event->getUser());
+        $this->assertSame($message, $event->getMessage());
+        $this->assertSame((string) $severity, (string) $event->getLevel());
+        $this->assertMatchesPattern('@string@', (string) $event->getId());
+        $this->assertMatchesPattern('@string@', (string) $event->getTimestamp());
+        $this->assertMatchesPattern('@string@', $event->getServerName());
+        $this->assertMatchesPattern(['processScope' => 'called'] + $extra, $event->getExtra());
 
         if ($breadcrumbs) {
             $this->assertMatchesPattern(
                 json_encode($breadcrumbs),
-                json_encode($event['breadcrumbs']['values'])
+                json_encode(
+                    array_map(
+                        static function (Breadcrumb $breadcrumb) {
+                            return [
+                                'type'      => $breadcrumb->getType(),
+                                'category'  => $breadcrumb->getCategory(),
+                                'level'     => $breadcrumb->getLevel(),
+                                'message'   => $breadcrumb->getMessage(),
+                                'timestamp' => (float) $breadcrumb->getTimestamp(),
+                                'data'      => $breadcrumb->getMetadata(),
+                            ];
+                        },
+                        $event->getBreadcrumbs()
+                    )
+                )
             );
         } else {
-            $this->assertArrayNotHasKey('breadcrumbs', $event);
+            $this->assertCount(0, $event->getBreadcrumbs());
         }
 
-        $this->assertMatchesPattern(
-            [
-                'name'    => 'sentry.php',
-                'version' => '@string@',
-            ],
-            $event['sdk']
-        );
+        $this->assertSame('sentry.php', $event->getSdkIdentifier());
+        $this->assertMatchesPattern('@string@', $event->getSdkVersion());
 
-        $this->assertMatchesPattern(
-            [
-                'os' => [
-                    'name'           => '@string@',
-                    'version'        => '@string@',
-                    'build'          => '@string@',
-                    'kernel_version' => '@string@',
-                ],
-                'runtime' => [
-                    'name'    => 'php',
-                    'version' => '@string@',
-                ],
-            ],
-            $event['contexts']
-        );
+        if (null !== ($os = $event->getOsContext())) {
+            $this->assertMatchesPattern('@string@', $os->getName());
+            $this->assertMatchesPattern('@string@', $os->getVersion());
+            $this->assertMatchesPattern('@string@', $os->getBuild());
+            $this->assertMatchesPattern('@string@', $os->getKernelVersion());
+        }
+        if (null !== ($runtime = $event->getRuntimeContext())) {
+            $this->assertMatchesPattern('php', $runtime->getName());
+            $this->assertMatchesPattern('@string@', $runtime->getVersion());
+        }
     }
 
     private function createSentryHandler(int $level = null): SpySentryHandler
@@ -500,7 +518,7 @@ class SpySentryHandler extends SentryHandler
     public $afterWriteCalled = false;
 
     /** {@inheritdoc} */
-    protected function processScope(Scope $scope, array $record, array $sentryEvent): void
+    protected function processScope(Scope $scope, array $record, Event $sentryEvent): void
     {
         $scope->setExtra('processScope', 'called');
     }
@@ -519,7 +537,7 @@ class SpySentryHandler extends SentryHandler
     }
 }
 
-class SpyTransport extends NullTransport implements ClosableTransportInterface
+class SpyTransport implements TransportInterface
 {
     /**
      * @var Event|null
@@ -531,11 +549,11 @@ class SpyTransport extends NullTransport implements ClosableTransportInterface
      */
     public $isFlushed = false;
 
-    public function send(Event $event): ?string
+    public function send(Event $event): PromiseInterface
     {
         $this->spiedEvent = $event;
 
-        return parent::send($event);
+        return new FulfilledPromise(new Response(ResponseStatus::skipped(), $event));
     }
 
     public function resetSpy(): void
@@ -544,16 +562,13 @@ class SpyTransport extends NullTransport implements ClosableTransportInterface
         $this->isFlushed  = false;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    public function getSpiedEventsAsArray(): array
+    public function getSpiedEvent(): Event
     {
         if (null === $this->spiedEvent) {
             throw new \RuntimeException('No spied scope');
         }
 
-        return $this->spiedEvent->toArray();
+        return $this->spiedEvent;
     }
 
     public function close(?int $timeout = null): PromiseInterface

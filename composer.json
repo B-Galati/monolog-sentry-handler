@@ -1,5 +1,5 @@
 {
-    "name": "bgalati/monolog-sentry-handler",
+    "name": "homeapp/monolog-sentry-handler",
     "description": "Sentry handler for php SDK",
     "type": "library",
     "license": "MIT",
@@ -11,12 +11,12 @@
     ],
     "autoload": {
         "psr-4": {
-            "BGalati\\MonologSentryHandler\\": "src"
+            "Homeapp\\MonologSentryHandler\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "BGalati\\MonologSentryHandler\\Tests\\": "tests"
+            "Homeapp\\MonologSentryHandler\\Tests\\": "tests"
         }
     },
     "config": {
@@ -28,9 +28,10 @@
         }
     },
     "require": {
-        "php": "^7.1.3 || ^8.0",
+        "php": "^7.4 || ^8.0",
         "monolog/monolog": "^2.2",
-        "sentry/sdk": "^3.0"
+        "sentry/sentry": "^3.2",
+        "symfony/http-client": "^5.2"
     },
     "require-dev": {
         "coduo/php-matcher": "^3.2.2",

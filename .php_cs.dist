@@ -64,6 +64,7 @@ return PhpCsFixer\Config::create()
         'no_whitespace_before_comma_in_array'           => false,
         'binary_operator_spaces'                        => ['default' => 'align_single_space_minimal'],
         'self_accessor'                                 => false,
+        'yoda_style'                                    => false,
     ])
     ->setRiskyAllowed(true)
     ->setFinder($finder)
