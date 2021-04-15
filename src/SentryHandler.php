@@ -22,16 +22,24 @@ class SentryHandler extends AbstractProcessingHandler
 
     private array $breadcrumbsBuffer = [];
 
+    private bool $sendContext;
+
     /**
-     * @param HubInterface $hub    The sentry hub used to send event to Sentry
-     * @param int          $level  The minimum logging level at which this handler will be triggered
-     * @param bool         $bubble Whether the messages that are handled can bubble up the stack or not
+     * @param HubInterface $hub         The sentry hub used to send event to Sentry
+     * @param int          $level       The minimum logging level at which this handler will be triggered
+     * @param bool         $bubble      Whether the messages that are handled can bubble up the stack or not
+     * @param bool         $sendContext Whether to send record['context'] vars to sentry
      */
-    public function __construct(HubInterface $hub, int $level = Logger::DEBUG, bool $bubble = true)
-    {
+    public function __construct(
+        HubInterface $hub,
+        int $level = Logger::DEBUG,
+        bool $bubble = true,
+        bool $sendContext = true
+    ) {
         parent::__construct($level, $bubble);
 
-        $this->hub = $hub;
+        $this->hub         = $hub;
+        $this->sendContext = $sendContext;
     }
 
     /**
@@ -86,20 +94,11 @@ class SentryHandler extends AbstractProcessingHandler
             function (Scope $scope) use ($record, $sentryEvent, $sentryLevel): void {
                 $scope->setLevel($sentryLevel);
                 $scope->setExtra('monolog.formatted', $record['formatted'] ?? '');
-
-                foreach ($this->breadcrumbsBuffer as $breadcrumbRecord) {
-                    $context = array_merge($breadcrumbRecord['context'], $breadcrumbRecord['extra']);
-
-                    $scope->addBreadcrumb(
-                        new Breadcrumb(
-                            $this->getBreadcrumbLevelFromLevel((int) $breadcrumbRecord['level']),
-                            $this->getBreadcrumbTypeFromLevel((int) $breadcrumbRecord['level']),
-                            (string) $breadcrumbRecord['channel'] ?: 'N/A',
-                            (string) $breadcrumbRecord['message'] ?: 'N/A',
-                            $context
-                        )
-                    );
+                if ($this->sendContext) {
+                    $this->fillScopeWithContext($record, $scope);
                 }
+
+                $this->fillContextFromBreadcrumbs($scope);
 
                 $this->processScope($scope, $record, $sentryEvent);
 
@@ -109,7 +108,36 @@ class SentryHandler extends AbstractProcessingHandler
         $this->afterWrite();
     }
 
+    private function fillScopeWithContext(array $record, Scope $scope): void
+    {
+        if (isset($record['context']) && \is_array($record['context'])) {
+            foreach ($record['context'] as $key => $value) {
+                if (is_scalar($value)) {
+                    $scope->setExtra((string) $key, (string) $value);
+                }
+            }
+        }
+    }
+
+    private function fillContextFromBreadcrumbs(Scope $scope): void
+    {
+        foreach ($this->breadcrumbsBuffer as $breadcrumbRecord) {
+            $context = array_merge($breadcrumbRecord['context'], $breadcrumbRecord['extra']);
+
+            $scope->addBreadcrumb(
+                new Breadcrumb(
+                    $this->getBreadcrumbLevelFromLevel((int) $breadcrumbRecord['level']),
+                    $this->getBreadcrumbTypeFromLevel((int) $breadcrumbRecord['level']),
+                    (string) $breadcrumbRecord['channel'] ?: 'N/A',
+                    (string) $breadcrumbRecord['message'] ?: 'N/A',
+                    $context
+                )
+            );
+        }
+    }
+
     /**
+     * @todo: Allow such extensions via injecting processors for scope, not using inheritance (or just delete this method)
      * Extension point.
      *
      * This method is called when Sentry event is captured by the handler.
@@ -119,11 +147,12 @@ class SentryHandler extends AbstractProcessingHandler
      * @param array       $record      Current monolog record
      * @param SentryEvent $sentryEvent Current sentry event that will be captured
      */
-    protected function processScope(Scope $scope, array $record, SentryEvent $sentryEvent): void
+    private function processScope(Scope $scope, array $record, SentryEvent $sentryEvent): void
     {
     }
 
     /**
+     * @todo: Allow such extensions via injecting processors for scope, not using inheritance (or just delete this method)
      * Extension point.
      *
      * Overridable method that for example can be used to:
@@ -131,7 +160,7 @@ class SentryHandler extends AbstractProcessingHandler
      *   - add some custom logic after monolog write process
      *   - ...
      */
-    protected function afterWrite(): void
+    private function afterWrite(): void
     {
         $client = $this->hub->getClient();
 

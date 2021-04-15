@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Homeapp\MonologSentryHandler\Tests;
 
-use Homeapp\MonologSentryHandler\SentryHandler;
 use Coduo\PHPMatcher\PHPUnit\PHPMatcherAssertions;
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\PromiseInterface;
+use Homeapp\MonologSentryHandler\SentryHandler;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
