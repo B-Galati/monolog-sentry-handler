@@ -16,7 +16,7 @@ use Sentry\State\HubInterface;
 use Sentry\State\Scope;
 use Throwable;
 
-class SentryHandler extends AbstractProcessingHandler
+final class SentryHandler extends AbstractProcessingHandler
 {
     protected HubInterface $hub;
 

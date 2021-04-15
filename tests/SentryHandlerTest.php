@@ -74,7 +74,6 @@ class SentryHandlerTest extends TestCase
 
         $handler->handle($record);
 
-        $this->assertTrue($handler->afterWriteCalled);
         $this->assertCapturedEvent(
             Severity::info(),
             'app.INFO: My info message',
@@ -97,7 +96,6 @@ class SentryHandlerTest extends TestCase
 
         $handler->handle($record);
 
-        $this->assertTrue($handler->afterWriteCalled);
         $this->assertCapturedEvent(
             Severity::info(),
             'app.INFO: My info message',
@@ -111,7 +109,6 @@ class SentryHandlerTest extends TestCase
         $handler = $this->createSentryHandler();
         $handler->handleBatch([]);
 
-        $this->assertFalse($handler->afterWriteCalled);
         $this->assertNull($this->transport->spiedEvent);
     }
 
@@ -188,7 +185,6 @@ class SentryHandlerTest extends TestCase
 
         $handler->handleBatch($records);
 
-        $this->assertTrue($handler->afterWriteCalled);
         $this->assertCapturedEvent(
             Severity::fatal(),
             'chan-emerg.EMERGENCY: Emergency message',
@@ -326,7 +322,6 @@ class SentryHandlerTest extends TestCase
 
         $handler->handleBatch($records);
 
-        $this->assertTrue($handler->afterWriteCalled);
         $this->assertCapturedEvent(
             Severity::fatal(),
             'test.CRITICAL: Critical message',
@@ -380,14 +375,11 @@ class SentryHandlerTest extends TestCase
 
         $handler->handleBatch($records);
 
-        $this->assertTrue($handler->afterWriteCalled);
-
         $handler->resetSpy();
         $this->transport->resetSpy();
 
         $handler->handleBatch($records);
 
-        $this->assertTrue($handler->afterWriteCalled);
         $this->assertCapturedEvent(
             Severity::info(),
             'test.INFO: Info message',
@@ -431,7 +423,6 @@ class SentryHandlerTest extends TestCase
 
         $handler->handleBatch($records);
 
-        $this->assertFalse($handler->afterWriteCalled);
         $this->assertNull($this->transport->spiedEvent);
     }
 
@@ -496,44 +487,17 @@ class SentryHandlerTest extends TestCase
         }
     }
 
-    private function createSentryHandler(int $level = null): SpySentryHandler
+    private function createSentryHandler(int $level = null): SentryHandler
     {
         if (null === $level) {
-            $handler = new SpySentryHandler($this->hub);
+            $handler = new SentryHandler($this->hub);
         } else {
-            $handler = new SpySentryHandler($this->hub, $level);
+            $handler = new SentryHandler($this->hub, $level);
         }
 
         $handler->setFormatter(new LineFormatter('%channel%.%level_name%: %message% %extra%'));
 
         return $handler;
-    }
-}
-
-class SpySentryHandler extends SentryHandler
-{
-    /**
-     * @var bool
-     */
-    public $afterWriteCalled = false;
-
-    /** {@inheritdoc} */
-    protected function processScope(Scope $scope, array $record, Event $sentryEvent): void
-    {
-        $scope->setExtra('processScope', 'called');
-    }
-
-    /** {@inheritdoc} */
-    protected function afterWrite(): void
-    {
-        $this->afterWriteCalled = true;
-
-        parent::afterWrite();
-    }
-
-    public function resetSpy(): void
-    {
-        $this->afterWriteCalled = false;
     }
 }
 
