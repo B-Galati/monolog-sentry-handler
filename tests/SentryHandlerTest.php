@@ -15,13 +15,11 @@ use Sentry\Breadcrumb;
 use Sentry\ClientBuilder;
 use Sentry\Event;
 use Sentry\Integration\EnvironmentIntegration;
-use Sentry\Options;
 use Sentry\Response;
 use Sentry\ResponseStatus;
 use Sentry\SentrySdk;
 use Sentry\Severity;
 use Sentry\State\HubInterface;
-use Sentry\State\Scope;
 use Sentry\Transport\TransportFactoryInterface;
 use Sentry\Transport\TransportInterface;
 
@@ -36,8 +34,7 @@ class SentryHandlerTest extends TestCase
     protected function setUp(): void
     {
         $this->transport = new SpyTransport();
-
-        $clientBuilder = ClientBuilder::create(
+        $clientBuilder   = ClientBuilder::create(
             [
                 'default_integrations' => false,
                 'integrations'         => [
@@ -46,7 +43,9 @@ class SentryHandlerTest extends TestCase
                 ],
             ]
         );
-        $clientBuilder->setTransportFactory(new FakeTransportFactory($this->transport));
+        $transportFactory = $this->createMock(TransportFactoryInterface::class);
+        $transportFactory->expects($this->once())->method('create')->willReturn($this->transport);
+        $clientBuilder->setTransportFactory($transportFactory);
 
         $client = $clientBuilder->getClient();
 
@@ -375,7 +374,6 @@ class SentryHandlerTest extends TestCase
 
         $handler->handleBatch($records);
 
-        $handler->resetSpy();
         $this->transport->resetSpy();
 
         $handler->handleBatch($records);
@@ -447,7 +445,6 @@ class SentryHandlerTest extends TestCase
         $this->assertMatchesPattern('@string@', (string) $event->getId());
         $this->assertMatchesPattern('@string@', (string) $event->getTimestamp());
         $this->assertMatchesPattern('@string@', $event->getServerName());
-        $this->assertMatchesPattern(['processScope' => 'called'] + $extra, $event->getExtra());
 
         if ($breadcrumbs) {
             $this->assertMatchesPattern(
@@ -540,23 +537,5 @@ class SpyTransport implements TransportInterface
         $this->isFlushed = true;
 
         return new FulfilledPromise(true);
-    }
-}
-
-class FakeTransportFactory implements TransportFactoryInterface
-{
-    /**
-     * @var SpyTransport
-     */
-    private $transport;
-
-    public function __construct(SpyTransport $transport)
-    {
-        $this->transport = $transport;
-    }
-
-    public function create(Options $options): TransportInterface
-    {
-        return $this->transport;
     }
 }
