@@ -25,21 +25,40 @@ final class SentryHandler extends AbstractProcessingHandler
     private bool $sendContext;
 
     /**
-     * @param HubInterface $hub         The sentry hub used to send event to Sentry
-     * @param int          $level       The minimum logging level at which this handler will be triggered
-     * @param bool         $bubble      Whether the messages that are handled can bubble up the stack or not
-     * @param bool         $sendContext Whether to send record['context'] vars to sentry
+     * @var list<ScopeProcessor>
+     */
+    private array $scopeProcessors;
+
+    /**
+     * @param HubInterface    $hub             The sentry hub used to send event to Sentry
+     * @param int             $level           The minimum logging level at which this handler will be triggered
+     * @param bool            $bubble          Whether the messages that are handled can bubble up the stack or not
+     * @param bool            $sendContext     Whether to send record['context'] vars to sentry
+     * @param iterable<mixed> $scopeProcessors Scope processors that will be called before reporting event
      */
     public function __construct(
         HubInterface $hub,
         int $level = Logger::DEBUG,
         bool $bubble = true,
-        bool $sendContext = true
+        bool $sendContext = true,
+        iterable $scopeProcessors = []
     ) {
         parent::__construct($level, $bubble);
 
         $this->hub         = $hub;
         $this->sendContext = $sendContext;
+        foreach ($scopeProcessors as $scopeProcessor) {
+            if ($scopeProcessor instanceof ScopeProcessor) {
+                $this->scopeProcessors[] = $scopeProcessor;
+            } else {
+                $msg = sprintf(
+                    'All scope processors must be %s, %s given ',
+                    ScopeProcessor::class,
+                    \is_object($scopeProcessor) ? \get_class($scopeProcessor) : \gettype($scopeProcessor)
+                );
+                throw new \InvalidArgumentException($msg);
+            }
+        }
     }
 
     /**
@@ -136,17 +155,6 @@ final class SentryHandler extends AbstractProcessingHandler
         }
     }
 
-    /**
-     * @todo: Allow such extensions via injecting processors for scope, not using inheritance (or just delete this method)
-     * Extension point.
-     *
-     * This method is called when Sentry event is captured by the handler.
-     * Override it if you want to add custom data to Sentry $scope.
-     *
-     * @param Scope       $scope       Sentry scope where you can add custom data
-     * @param array       $record      Current monolog record
-     * @param SentryEvent $sentryEvent Current sentry event that will be captured
-     */
     private function processScope(Scope $scope, array $record, SentryEvent $sentryEvent): void
     {
     }

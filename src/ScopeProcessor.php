@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Homeapp\MonologSentryHandler;
 
-use Sentry\State\Scope;
 use Sentry\Event as SentryEvent;
+use Sentry\State\Scope;
 
 /**
  * ScopeProcessor is called when Sentry event is captured by the handler.
