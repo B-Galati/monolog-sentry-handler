@@ -30,8 +30,7 @@
     "require": {
         "php": "^7.4 || ^8.0",
         "monolog/monolog": "^2.2",
-        "sentry/sentry": "^3.2",
-        "symfony/http-client": "^5.2"
+        "sentry/sentry": "^3.2"
     },
     "require-dev": {
         "coduo/php-matcher": "^3.2.2",
