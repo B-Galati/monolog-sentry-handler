@@ -157,6 +157,9 @@ final class SentryHandler extends AbstractProcessingHandler
 
     private function processScope(Scope $scope, array $record, SentryEvent $sentryEvent): void
     {
+        foreach ($this->scopeProcessors as $scopeProcessor) {
+            $scopeProcessor->processScope($scope, $record, $sentryEvent);
+        }
     }
 
     private function afterWrite(): void
