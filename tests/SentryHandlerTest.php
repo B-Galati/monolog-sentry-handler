@@ -7,6 +7,7 @@ namespace Homeapp\MonologSentryHandler\Tests;
 use Coduo\PHPMatcher\PHPUnit\PHPMatcherAssertions;
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\PromiseInterface;
+use Homeapp\MonologSentryHandler\ScopeProcessor;
 use Homeapp\MonologSentryHandler\SentryHandler;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Logger;
@@ -20,6 +21,7 @@ use Sentry\ResponseStatus;
 use Sentry\SentrySdk;
 use Sentry\Severity;
 use Sentry\State\HubInterface;
+use Sentry\State\Scope;
 use Sentry\Transport\TransportFactoryInterface;
 use Sentry\Transport\TransportInterface;
 
@@ -30,6 +32,8 @@ class SentryHandlerTest extends TestCase
     private HubInterface $hub;
 
     private SpyTransport $transport;
+
+    private SpyScopeProcessor $spyScopeProcessor;
 
     protected function setUp(): void
     {
@@ -55,7 +59,7 @@ class SentryHandlerTest extends TestCase
 
     protected function tearDown(): void
     {
-        unset($this->hub, $this->transport);
+        unset($this->hub, $this->transport, $this->spyScopeProcessor);
     }
 
     public function testHandle(): void
@@ -445,6 +449,7 @@ class SentryHandlerTest extends TestCase
         $this->assertMatchesPattern('@string@', (string) $event->getId());
         $this->assertMatchesPattern('@string@', (string) $event->getTimestamp());
         $this->assertMatchesPattern('@string@', $event->getServerName());
+        $this->assertTrue($this->spyScopeProcessor->wasCalled);
 
         if ($breadcrumbs) {
             $this->assertMatchesPattern(
@@ -484,17 +489,25 @@ class SentryHandlerTest extends TestCase
         }
     }
 
-    private function createSentryHandler(int $level = null): SentryHandler
+    private function createSentryHandler(int $level = Logger::DEBUG): SentryHandler
     {
-        if (null === $level) {
-            $handler = new SentryHandler($this->hub);
-        } else {
-            $handler = new SentryHandler($this->hub, $level);
-        }
+        $this->spyScopeProcessor = new SpyScopeProcessor();
+
+        $handler = new SentryHandler($this->hub, $level, true, true, [$this->spyScopeProcessor]);
 
         $handler->setFormatter(new LineFormatter('%channel%.%level_name%: %message% %extra%'));
 
         return $handler;
+    }
+}
+
+class SpyScopeProcessor implements ScopeProcessor
+{
+    public bool $wasCalled = false;
+
+    public function processScope(Scope $scope, array $record, Event $sentryEvent): void
+    {
+        $this->wasCalled = true;
     }
 }
 
