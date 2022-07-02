@@ -1,6 +1,6 @@
 {
     "name": "bgalati/monolog-sentry-handler",
-    "description": "Sentry handler for php SDK",
+    "description": "Sentry handler for PHP SDK v2/v3",
     "type": "library",
     "license": "MIT",
     "authors": [
@@ -39,9 +39,9 @@
     "require-dev": {
         "coduo/php-matcher": "^3.2.2",
         "friendsofphp/php-cs-fixer": "^2.15",
-        "jangregor/phpstan-prophecy": "^0.8.1",
-        "phpstan/phpstan": "^0.12.25",
-        "phpstan/phpstan-phpunit": "^0.12.8",
+        "jangregor/phpstan-prophecy": "^1.0.0",
+        "phpstan/phpstan": "^1.8.0",
+        "phpstan/phpstan-phpunit": "^1.1.1",
         "phpunit/phpunit": "^7.5||^8.3",
         "sentry/sdk": "^3.1",
         "symfony/phpunit-bridge": "^4.3",

@@ -25,7 +25,7 @@ use Sentry\State\Scope;
 use Sentry\Transport\TransportFactoryInterface;
 use Sentry\Transport\TransportInterface;
 
-class SentryHandlerTest extends TestCase
+final class SentryHandlerTest extends TestCase
 {
     use PHPMatcherAssertions;
 
