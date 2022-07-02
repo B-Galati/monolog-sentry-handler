@@ -9,7 +9,9 @@ use Coduo\PHPMatcher\PHPUnit\PHPMatcherAssertions;
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\PromiseInterface;
 use Monolog\Formatter\LineFormatter;
+use Monolog\Level;
 use Monolog\Logger;
+use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
 use Sentry\Breadcrumb;
 use Sentry\ClientBuilder;
@@ -25,7 +27,7 @@ use Sentry\State\Scope;
 use Sentry\Transport\TransportFactoryInterface;
 use Sentry\Transport\TransportInterface;
 
-class SentryHandlerTest extends TestCase
+final class SentryHandlerTest extends TestCase
 {
     use PHPMatcherAssertions;
 
@@ -65,18 +67,47 @@ class SentryHandlerTest extends TestCase
         unset($this->hub, $this->transport);
     }
 
+    /**
+     * @return array<string, mixed>|LogRecord
+     */
+    private function record(array $record)
+    {
+        if (Logger::API < 3) { // @phpstan-ignore-line - Comparison operation "<" between 3 and 3 is always false.
+            return $record;
+        }
+
+        return new LogRecord(
+            new \DateTimeImmutable(),
+            $record['channel'],
+            Level::from($record['level']),
+            $record['message'],
+            $record['context'],
+            $record['extra']
+        );
+    }
+
+    /**
+     * @return array<array<string, mixed>|LogRecord>
+     */
+    private function records(array $records)
+    {
+        return array_map(function($record) {
+            return $this->record($record);
+        }, $records);
+    }
+
     public function testHandle(): void
     {
         $handler = $this->createSentryHandler();
 
-        $record = [
+        $record = $this->record([
             'message'    => 'My info message',
             'context'    => [],
             'level'      => Logger::INFO,
             'level_name' => Logger::getLevelName(Logger::INFO),
             'channel'    => 'app',
             'extra'      => [],
-        ];
+        ]);
 
         $handler->handle($record);
 
@@ -92,14 +123,14 @@ class SentryHandlerTest extends TestCase
     {
         $handler = $this->createSentryHandler();
 
-        $record = [
+        $record = $this->record([
             'message'    => 'My info message',
             'context'    => ['exception' => $exception = new \LogicException('Test logic exception')],
             'level'      => Logger::INFO,
             'level_name' => Logger::getLevelName(Logger::INFO),
             'channel'    => 'app',
             'extra'      => [],
-        ];
+        ]);
 
         $handler->handle($record);
 
@@ -125,7 +156,7 @@ class SentryHandlerTest extends TestCase
     {
         $handler = $this->createSentryHandler();
 
-        $records = [
+        $records = $this->records([
             [
                 'message'    => 'Info message',
                 'context'    => ['exception' => new \LogicException()],
@@ -190,7 +221,7 @@ class SentryHandlerTest extends TestCase
                 'channel'    => 'chan-critical',
                 'extra'      => ['extra-critical'],
             ],
-        ];
+        ]);
 
         $handler->handleBatch($records);
 
@@ -279,7 +310,7 @@ class SentryHandlerTest extends TestCase
     {
         $handler = $this->createSentryHandler(Logger::WARNING);
 
-        $records = [
+        $records = $this->records([
             [
                 'message'    => 'Info message',
                 'context'    => ['exception' => new \LogicException()],
@@ -328,7 +359,7 @@ class SentryHandlerTest extends TestCase
                 'channel'    => 'test',
                 'extra'      => [],
             ],
-        ];
+        ]);
 
         $handler->handleBatch($records);
 
@@ -373,7 +404,7 @@ class SentryHandlerTest extends TestCase
     {
         $handler = $this->createSentryHandler();
 
-        $records = [
+        $records = $this->records([
             [
                 'message'    => 'Info message',
                 'context'    => [],
@@ -382,7 +413,7 @@ class SentryHandlerTest extends TestCase
                 'channel'    => 'test',
                 'extra'      => [],
             ],
-        ];
+        ]);
 
         $handler->handleBatch($records);
 
@@ -416,7 +447,7 @@ class SentryHandlerTest extends TestCase
     {
         $handler = $this->createSentryHandler(Logger::EMERGENCY);
 
-        $records = [
+        $records = $this->records([
             [
                 'message'    => 'Info message',
                 'context'    => ['exception' => new \LogicException()],
@@ -433,7 +464,7 @@ class SentryHandlerTest extends TestCase
                 'channel'    => 'test',
                 'extra'      => [],
             ],
-        ];
+        ]);
 
         $handler->handleBatch($records);
 
@@ -502,6 +533,9 @@ class SentryHandlerTest extends TestCase
         }
     }
 
+    /**
+     * @param Logger::* $level
+     */
     private function createSentryHandler(int $level = null): SpySentryHandler
     {
         if (null === $level) {
@@ -524,7 +558,7 @@ class SpySentryHandler extends SentryHandler
     public $afterWriteCalled = false;
 
     /** {@inheritdoc} */
-    protected function processScope(Scope $scope, array $record, Event $sentryEvent): void
+    protected function processScope(Scope $scope, $record, Event $sentryEvent): void
     {
         $scope->setExtra('processScope', 'called');
     }

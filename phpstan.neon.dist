@@ -8,4 +8,18 @@ parameters:
     checkMissingIterableValueType: false
 
     level: 8
-    paths: [src, tests]
+    paths: [ src, tests ]
+
+    ignoreErrors:
+        - "#^Cannot assign offset 'formatted' to Monolog\\\\LogRecord\\.$#"
+        - message: "#^Parameter \\#1 \\$level of method Monolog\\\\Handler\\\\AbstractHandler\\:\\:__construct\\(\\) expects 100\\|200\\|250\\|300\\|400\\|500\\|550\\|600\\|'ALERT'\\|'alert'\\|'CRITICAL'\\|'critical'\\|'DEBUG'\\|'debug'\\|'EMERGENCY'\\|'emergency'\\|'ERROR'\\|'error'\\|'INFO'\\|'info'\\|'NOTICE'\\|'notice'\\|'WARNING'\\|'warning'\\|Monolog\\\\Level, 3\\|100\\|200\\|250\\|300\\|400\\|500\\|550\\|600 given\\.$#"
+          path: src/SentryHandler.php
+
+        - message: "#^Parameter \\#1 \\$record of method Monolog\\\\Formatter\\\\LineFormatter\\:\\:format\\(\\) expects Monolog\\\\LogRecord, array\\<string, mixed\\>\\|Monolog\\\\LogRecord given\\.$#"
+          path: src/SentryHandler.php
+
+        - message: "#expects Monolog\\\\LogRecord, array\\<string, mixed\\>\\|Monolog\\\\LogRecord given\\.$#"
+          path: tests
+
+        - message: "#expects array\\<Monolog\\\\LogRecord\\>, array\\<array\\<string, mixed\\>\\|Monolog\\\\LogRecord\\> given\\.$#"
+          path: tests

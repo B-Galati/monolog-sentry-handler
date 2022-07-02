@@ -46,7 +46,7 @@ It provides the following benefits:
 Symfony http client is suggested because of its native async capabilities:
 
 ```
-composer require symfony/http-client nyholm/psr7 guzzlehttp/promises
+composer require symfony/http-client nyholm/psr7
 ```
 
 Let's configure the Sentry Hub with a factory. It gives full flexibility in terms of configuration.
@@ -56,23 +56,20 @@ Let's configure the Sentry Hub with a factory. It gives full flexibility in term
 
 namespace App;
 
-use App\Kernel;
-use Jean85\PrettyVersions;
-use Nyholm\Psr7\Factory\HttplugFactory;
-use Nyholm\Psr7\Factory\Psr17Factory;
-use Sentry\Client;
-use Sentry\ClientBuilder;
-use Sentry\HttpClient\HttpClientFactory;
+use Psr\Log\LoggerInterface;
+use Sentry\Integration\EnvironmentIntegration;
+use Sentry\Integration\FrameContextifierIntegration;
 use Sentry\Integration\RequestIntegration;
 use Sentry\SentrySdk;
-use Sentry\State\Hub;
 use Sentry\State\HubInterface;
-use Sentry\Transport\DefaultTransportFactory;
-use Symfony\Component\HttpClient\HttpClient;
-use Symfony\Component\HttpClient\HttplugClient;
+use Sentry\State\Scope;
 
 class SentryFactory
 {
+    public function __construct(private readonly LoggerInterface $logger)
+    {
+    }
+
     public function create(
         ?string $dsn,
         string $environment,
@@ -80,7 +77,7 @@ class SentryFactory
         string $projectRoot,
         string $cacheDir
     ): HubInterface {
-        $clientBuilder = ClientBuilder::create([
+        \Sentry\init([
             'dsn'                  => $dsn ?: null,
             'environment'          => $environment, // I.e.: staging, testing, production, etc.
             'in_app_include'       => [$projectRoot],
@@ -88,40 +85,22 @@ class SentryFactory
             'prefixes'             => [$projectRoot],
             'release'              => $release,
             'default_integrations' => false,
-            'send_attempts'        => 1,
-            'tags'                 => [
-                'php_uname'       => \PHP_OS,
-                'php_sapi_name'   => \PHP_SAPI,
-                'php_version'     => \PHP_VERSION,
-                'framework'       => 'symfony',
-                'symfony_version' => Kernel::VERSION,
-            ],
+            'integrations'         => [
+                new RequestIntegration(),
+                new EnvironmentIntegration(),
+                new FrameContextifierIntegration($this->logger),
+            ]
         ]);
 
-        $client       = HttpClient::create(['timeout' => 2]);
-        $psr17Factory = new Psr17Factory();
-        $httpClient   = new HttplugClient($client, $psr17Factory, $psr17Factory);
+        $hub = SentrySdk::getCurrentHub();
+        $hub->configureScope(static function (Scope $scope): void {
+            $scope->setTags([
+                'framework'       => 'symfony',
+                'symfony_version' => Kernel::VERSION,
+            ]);
+        });
 
-        $httpPlugFactory   = new HttplugFactory();
-        $httpClientFactory = new HttpClientFactory(
-            $httpPlugFactory,
-            $httpPlugFactory,
-            $httpPlugFactory,
-            $httpClient,
-            Client::SDK_IDENTIFIER,
-            PrettyVersions::getVersion('sentry/sentry')->getPrettyVersion()
-        );
-
-        $clientBuilder->setTransportFactory(new DefaultTransportFactory($httpPlugFactory, $httpClientFactory));
-
-        // Enable Sentry RequestIntegration
-        $options = $clientBuilder->getOptions();
-        $options->setIntegrations([new RequestIntegration()]);
-
-        $client = $clientBuilder->getClient();
-
-        // A global HubInterface must be set otherwise some feature provided by the SDK does not work as they rely on this global state
-        return SentrySdk::setCurrentHub(new Hub($client));
+        return SentrySdk::getCurrentHub();
     }
 }
 ```
