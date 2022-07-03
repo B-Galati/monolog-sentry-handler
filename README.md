@@ -12,7 +12,7 @@ It is a [Monolog](https://github.com/Seldaek/monolog) handler for Sentry PHP SDK
 - Send log records as breadcrumbs when they are handled in batch; the main reported log record is the one with the highest log level
 - Send log along with exception when one is set in the main log record context
 - Customize data sent to Sentry to fit your needs
-- Compatible with Monolog 1 and 2
+- Compatible with Monolog 1, 2 and 3
 - ~~Workaround for [an issue](https://github.com/getsentry/sentry-php/issues/811) that prevents sending logs in long running process~~
 
 ## Installation
