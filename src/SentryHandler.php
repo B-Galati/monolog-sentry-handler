@@ -11,11 +11,10 @@ use Monolog\Logger;
 use Monolog\LogRecord;
 use Sentry\Breadcrumb;
 use Sentry\Event as SentryEvent;
-use Sentry\ExceptionDataBag;
+use Sentry\EventHint;
 use Sentry\Severity;
 use Sentry\State\HubInterface;
 use Sentry\State\Scope;
-use Throwable;
 
 /**
  * Compatibility layer copied and completed from Sentry SDK
@@ -267,21 +266,26 @@ class SentryHandler extends AbstractProcessingHandler
      */
     protected function doWrite($record): void
     {
-        $sentryEvent = SentryEvent::createEvent();
-        $sentryEvent->setLevel($sentryLevel = $this->getSeverityFromLevel((int) $record['level']));
-        $sentryEvent->setMessage((new LineFormatter('%channel%.%level_name%: %message%'))->format($record));
+        $event = SentryEvent::createEvent();
+        $event->setLevel($this->getSeverityFromLevel((int) $record['level']));
+        $event->setMessage((new LineFormatter('%channel%.%level_name%: %message%'))->format($record));
+        $event->setLogger(sprintf('monolog.%s', $record['channel']));
 
-        if (isset($record['context']['exception']) && $record['context']['exception'] instanceof Throwable) {
-            $sentryEvent->setExceptions([new ExceptionDataBag($record['context']['exception'])]);
+        $hint = new EventHint();
+
+        if (isset($record['context']['exception']) && $record['context']['exception'] instanceof \Throwable) {
+            $hint->exception = $record['context']['exception'];
         }
 
         $this->hub->withScope(
-            function (Scope $scope) use ($record, $sentryEvent, $sentryLevel): void {
-                $scope->setLevel($sentryLevel);
+            function (Scope $scope) use ($record, $event, $hint): void {
+                $scope->setExtra('monolog.channel', $record['channel']);
                 $scope->setExtra('monolog.formatted', $record['formatted'] ?? '');
+                $scope->setExtra('monolog.level', $record['level_name']);
 
                 foreach ($this->breadcrumbsBuffer as $breadcrumbRecord) {
                     $context = array_merge($breadcrumbRecord['context'], $breadcrumbRecord['extra']);
+                    unset($context['exception']);
 
                     $scope->addBreadcrumb(
                         new Breadcrumb(
@@ -294,9 +298,9 @@ class SentryHandler extends AbstractProcessingHandler
                     );
                 }
 
-                $this->processScope($scope, $record, $sentryEvent);
+                $this->processScope($scope, $record, $event);
 
-                $this->hub->captureEvent($sentryEvent);
+                $this->hub->captureEvent($event, $hint);
             });
 
         $this->afterWrite();
