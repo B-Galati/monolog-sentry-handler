@@ -42,9 +42,9 @@
         "jangregor/phpstan-prophecy": "^1.0.0",
         "phpstan/phpstan": "^1.8.0",
         "phpstan/phpstan-phpunit": "^1.1.1",
-        "phpunit/phpunit": "^7.5||^8.3",
+        "phpunit/phpunit": "^9.5.21",
         "sentry/sdk": "^3.1",
-        "symfony/phpunit-bridge": "^4.3",
+        "symfony/phpunit-bridge": "^4.4.41",
         "symfony/var-dumper": ">4.3"
     }
 }
