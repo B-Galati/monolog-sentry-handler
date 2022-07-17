@@ -1,0 +1,57 @@
+name: Build
+
+on: [ pull_request ]
+
+env:
+  COMPOSER_UPDATE_FLAGS: "--no-interaction --no-progress --prefer-dist "
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    name: Test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: 7.4 # should use monolog v1
+            composer_update_flags: --prefer-lowest
+          - php: 7.4 # should use monolog v2
+          - php: 8.0 # should use monolog v2
+          - php: 8.1 # should use monolog v3
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "${{ matrix.php }}"
+          coverage: none
+
+      - name: Composer dependencies
+        run: COMPOSER_UPDATE_FLAGS+="${{matrix.composer_update_flags}}" make vendor
+
+      - name: PHPUnit
+        run: make phpunit
+
+  static-analysis:
+    runs-on: ubuntu-latest
+    name: Static analysis
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.1"
+
+      - name: Composer dependencies
+        run: make vendor
+
+      - name: Composer validate
+        run: make composer-validate
+
+      - name: PHPStan
+        run: make phpstan
+
+      - name: PHP CS Fixer
+        run: make php-cs-fixer-check
