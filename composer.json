@@ -32,12 +32,12 @@
         }
     },
     "require": {
-        "php": "^7.2 || ^8.0",
+        "php": "^7.4 || ^8.0",
         "monolog/monolog": "^1.6 || ^2.0 || ^3.0",
         "sentry/sentry": "^3.1"
     },
     "require-dev": {
-        "coduo/php-matcher": "^3.2.2",
+        "coduo/php-matcher": "^6.0.8",
         "friendsofphp/php-cs-fixer": "^2.15",
         "jangregor/phpstan-prophecy": "^1.0.0",
         "phpstan/phpstan": "^1.8.0",

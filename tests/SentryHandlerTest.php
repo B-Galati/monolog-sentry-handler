@@ -31,15 +31,8 @@ final class SentryHandlerTest extends TestCase
 {
     use PHPMatcherAssertions;
 
-    /**
-     * @var HubInterface
-     */
-    private $hub;
-
-    /**
-     * @var SpyTransport
-     */
-    private $transport;
+    private HubInterface $hub;
+    private SpyTransport $transport;
 
     protected function setUp(): void
     {
@@ -89,7 +82,7 @@ final class SentryHandlerTest extends TestCase
     /**
      * @return array<array<string, mixed>|LogRecord>
      */
-    private function records(array $records)
+    private function records(array $records): array
     {
         return array_map(function($record) {
             return $this->record($record);
@@ -239,7 +232,6 @@ final class SentryHandlerTest extends TestCase
                     'message'   => 'Info message',
                     'timestamp' => '@double@',
                     'data'      => [
-                        'exception' => '@*@',
                         'extra-info',
                     ],
                 ],
@@ -298,7 +290,6 @@ final class SentryHandlerTest extends TestCase
                     'message'   => 'Critical message',
                     'timestamp' => '@double@',
                     'data'      => [
-                        'exception' => '@*@',
                         'extra-critical',
                     ],
                 ],
@@ -392,9 +383,7 @@ final class SentryHandlerTest extends TestCase
                     'level'     => 'fatal',
                     'message'   => 'Critical message',
                     'timestamp' => '@double@',
-                    'data'      => [
-                        'exception' => '@*@',
-                    ],
+                    'data'      => [],
                 ],
             ]
         );
@@ -493,7 +482,13 @@ final class SentryHandlerTest extends TestCase
         $this->assertMatchesPattern('@string@', (string) $event->getId());
         $this->assertMatchesPattern('@string@', (string) $event->getTimestamp());
         $this->assertMatchesPattern('@string@', $event->getServerName());
-        $this->assertMatchesPattern(['processScope' => 'called'] + $extra, $event->getExtra());
+        $this->assertMatchesPattern([
+                'processScope' => 'called',
+                'monolog.channel' => '@string@',
+                'monolog.level' => '@string@',
+            ] + $extra,
+            $event->getExtra(),
+        );
 
         if ($breadcrumbs) {
             $this->assertMatchesPattern(

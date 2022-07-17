@@ -21,7 +21,7 @@ use Sentry\State\Scope;
  *
  * @see \Sentry\Monolog\CompatibilityProcessingHandlerTrait
  */
-if (Logger::API >= 3) {
+if (Logger::API >= 3) { // @phpstan-ignore-line - Comparison operation ">=" between 3 and 3 is always true.
     /**
      * Logic which is used if monolog >= 3 is installed.
      * @internal
@@ -90,7 +90,7 @@ if (Logger::API >= 3) {
             }
         }
     }
-} else {
+} else { // @phpstan-ignore-line - Else branch is unreachable because previous condition is always true.
     /**
      * Logic which is used if monolog < 3 is installed.
      * @internal
@@ -163,15 +163,8 @@ class SentryHandler extends AbstractProcessingHandler
 {
     use CompatibilityProcessingHandlerTrait;
 
-    /**
-     * @var HubInterface
-     */
-    protected $hub;
-
-    /**
-     * @var array
-     */
-    private $breadcrumbsBuffer = [];
+    protected HubInterface $hub;
+    private array $breadcrumbsBuffer = [];
 
     /**
      * @param HubInterface $hub    The sentry hub used to send event to Sentry

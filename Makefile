@@ -15,13 +15,12 @@ composer.lock: composer.json
 	composer update $(COMPOSER_UPDATE_FLAGS)
 	@touch $@
 
-.PHONY: tests tests-without-cs
-tests-without-cs: composer-validate phpstan phpunit ## Run all tests but code style check
-tests: tests-without-cs cs-check ## Run all tests
+.PHONY: tests
+tests: composer-validate phpstan phpunit php-cs-fixer-check ## Run all tests
 
 .PHONY: composer-validate
 composer-validate: vendor ## Validate composer.json file
-	composer validate
+	composer validate --strict
 
 .PHONY: phpstan
 phpstan: vendor ## Check PHP code style
@@ -31,10 +30,10 @@ phpstan: vendor ## Check PHP code style
 phpunit: vendor ## Run PhpUnit tests
 	vendor/bin/phpunit -v
 
-.PHONY: cs-check
-cs-check: vendor ## Check php code style
+.PHONY: php-cs-fixer-check
+php-cs-fixer-check: vendor ## Check php code style
 	vendor/bin/php-cs-fixer fix --diff --dry-run --no-interaction -v --cache-file=.php_cs.cache --stop-on-violation
 
-.PHONY: cs-fix
-cs-fix: vendor ## Automatically fix php code style
+.PHONY: php-cs-fixer-fix
+php-cs-fixer-fix: vendor ## Automatically fix php code style
 	vendor/bin/php-cs-fixer fix -v --cache-file=.php_cs.cache
