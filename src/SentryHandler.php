@@ -17,13 +17,14 @@ use Sentry\State\HubInterface;
 use Sentry\State\Scope;
 
 /**
- * Compatibility layer copied and completed from Sentry SDK
+ * Compatibility layer copied and completed from Sentry SDK.
  *
  * @see \Sentry\Monolog\CompatibilityProcessingHandlerTrait
  */
 if (Logger::API >= 3) { // @phpstan-ignore-line - Comparison operation ">=" between 3 and 3 is always true.
     /**
      * Logic which is used if monolog >= 3 is installed.
+     *
      * @internal
      */
     trait CompatibilityProcessingHandlerTrait
@@ -93,6 +94,7 @@ if (Logger::API >= 3) { // @phpstan-ignore-line - Comparison operation ">=" betw
 } else { // @phpstan-ignore-line - Else branch is unreachable because previous condition is always true.
     /**
      * Logic which is used if monolog < 3 is installed.
+     *
      * @internal
      */
     trait CompatibilityProcessingHandlerTrait
@@ -213,7 +215,7 @@ class SentryHandler extends AbstractProcessingHandler
 
         // the other ones are added as a context items
         foreach ($records as $record) {
-            $record              = $this->processRecord($record);
+            $record = $this->processRecord($record);
             $record['formatted'] = $this->getFormatter()->format($record);
 
             $this->breadcrumbsBuffer[] = $record;

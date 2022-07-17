@@ -41,7 +41,7 @@ final class SentryHandlerTest extends TestCase
         $clientBuilder = ClientBuilder::create(
             [
                 'default_integrations' => false,
-                'integrations'         => [
+                'integrations' => [
                     // In order to get OS and runtime context we must enable this
                     new EnvironmentIntegration(),
                 ],
@@ -84,7 +84,7 @@ final class SentryHandlerTest extends TestCase
      */
     private function records(array $records): array
     {
-        return array_map(function($record) {
+        return array_map(function ($record) {
             return $this->record($record);
         }, $records);
     }
@@ -94,12 +94,12 @@ final class SentryHandlerTest extends TestCase
         $handler = $this->createSentryHandler();
 
         $record = $this->record([
-            'message'    => 'My info message',
-            'context'    => [],
-            'level'      => Logger::INFO,
+            'message' => 'My info message',
+            'context' => [],
+            'level' => Logger::INFO,
             'level_name' => Logger::getLevelName(Logger::INFO),
-            'channel'    => 'app',
-            'extra'      => [],
+            'channel' => 'app',
+            'extra' => [],
         ]);
 
         $handler->handle($record);
@@ -117,12 +117,12 @@ final class SentryHandlerTest extends TestCase
         $handler = $this->createSentryHandler();
 
         $record = $this->record([
-            'message'    => 'My info message',
-            'context'    => ['exception' => $exception = new \LogicException('Test logic exception')],
-            'level'      => Logger::INFO,
+            'message' => 'My info message',
+            'context' => ['exception' => $exception = new \LogicException('Test logic exception')],
+            'level' => Logger::INFO,
             'level_name' => Logger::getLevelName(Logger::INFO),
-            'channel'    => 'app',
-            'extra'      => [],
+            'channel' => 'app',
+            'extra' => [],
         ]);
 
         $handler->handle($record);
@@ -151,68 +151,68 @@ final class SentryHandlerTest extends TestCase
 
         $records = $this->records([
             [
-                'message'    => 'Info message',
-                'context'    => ['exception' => new \LogicException()],
-                'level'      => $level = Logger::INFO,
+                'message' => 'Info message',
+                'context' => ['exception' => new \LogicException()],
+                'level' => $level = Logger::INFO,
                 'level_name' => Logger::getLevelName($level),
-                'channel'    => 'chan-info',
-                'extra'      => ['extra-info'],
+                'channel' => 'chan-info',
+                'extra' => ['extra-info'],
             ],
             [
-                'message'    => 'Error Message',
-                'context'    => [],
-                'level'      => $level = Logger::ERROR,
+                'message' => 'Error Message',
+                'context' => [],
+                'level' => $level = Logger::ERROR,
                 'level_name' => Logger::getLevelName($level),
-                'channel'    => 'chan-error',
-                'extra'      => ['extra-error'],
+                'channel' => 'chan-error',
+                'extra' => ['extra-error'],
             ],
             [
-                'message'    => 'Debug message',
-                'context'    => [],
-                'level'      => $level = Logger::DEBUG,
+                'message' => 'Debug message',
+                'context' => [],
+                'level' => $level = Logger::DEBUG,
                 'level_name' => Logger::getLevelName($level),
-                'channel'    => 'chan-debug',
-                'extra'      => ['extra-debug'],
+                'channel' => 'chan-debug',
+                'extra' => ['extra-debug'],
             ],
             [
-                'message'    => 'Emergency message',
-                'context'    => [],
-                'level'      => $level = Logger::EMERGENCY,
+                'message' => 'Emergency message',
+                'context' => [],
+                'level' => $level = Logger::EMERGENCY,
                 'level_name' => Logger::getLevelName($level),
-                'channel'    => 'chan-emerg',
-                'extra'      => ['extra-emerg'],
+                'channel' => 'chan-emerg',
+                'extra' => ['extra-emerg'],
             ],
             [
-                'message'    => 'Warning message',
-                'context'    => [],
-                'level'      => $level = Logger::WARNING,
+                'message' => 'Warning message',
+                'context' => [],
+                'level' => $level = Logger::WARNING,
                 'level_name' => Logger::getLevelName($level),
-                'channel'    => 'chan-warn',
-                'extra'      => ['extra-warn'],
+                'channel' => 'chan-warn',
+                'extra' => ['extra-warn'],
             ],
             [
-                'message'    => 'Notice message',
-                'context'    => [],
-                'level'      => $level = Logger::NOTICE,
+                'message' => 'Notice message',
+                'context' => [],
+                'level' => $level = Logger::NOTICE,
                 'level_name' => Logger::getLevelName($level),
-                'channel'    => 'chan-notice',
-                'extra'      => ['extra-notice'],
+                'channel' => 'chan-notice',
+                'extra' => ['extra-notice'],
             ],
             [
-                'message'    => 'Alert message',
-                'context'    => [],
-                'level'      => $level = Logger::ALERT,
+                'message' => 'Alert message',
+                'context' => [],
+                'level' => $level = Logger::ALERT,
                 'level_name' => Logger::getLevelName($level),
-                'channel'    => 'chan-alert',
-                'extra'      => ['extra-alert'],
+                'channel' => 'chan-alert',
+                'extra' => ['extra-alert'],
             ],
             [
-                'message'    => 'Critical message',
-                'context'    => ['exception' => new \LogicException()],
-                'level'      => $level = Logger::CRITICAL,
+                'message' => 'Critical message',
+                'context' => ['exception' => new \LogicException()],
+                'level' => $level = Logger::CRITICAL,
                 'level_name' => Logger::getLevelName($level),
-                'channel'    => 'chan-critical',
-                'extra'      => ['extra-critical'],
+                'channel' => 'chan-critical',
+                'extra' => ['extra-critical'],
             ],
         ]);
 
@@ -226,70 +226,70 @@ final class SentryHandlerTest extends TestCase
             null,
             [
                 [
-                    'type'      => 'default',
-                    'category'  => 'chan-info',
-                    'level'     => 'info',
-                    'message'   => 'Info message',
+                    'type' => 'default',
+                    'category' => 'chan-info',
+                    'level' => 'info',
+                    'message' => 'Info message',
                     'timestamp' => '@double@',
-                    'data'      => [
+                    'data' => [
                         'extra-info',
                     ],
                 ],
                 [
-                    'type'      => 'error',
-                    'category'  => 'chan-error',
-                    'level'     => 'error',
-                    'message'   => 'Error Message',
+                    'type' => 'error',
+                    'category' => 'chan-error',
+                    'level' => 'error',
+                    'message' => 'Error Message',
                     'timestamp' => '@double@',
-                    'data'      => ['extra-error'],
+                    'data' => ['extra-error'],
                 ],
                 [
-                    'type'      => 'default',
-                    'category'  => 'chan-debug',
-                    'level'     => 'debug',
-                    'message'   => 'Debug message',
+                    'type' => 'default',
+                    'category' => 'chan-debug',
+                    'level' => 'debug',
+                    'message' => 'Debug message',
                     'timestamp' => '@double@',
-                    'data'      => ['extra-debug'],
+                    'data' => ['extra-debug'],
                 ],
                 [
-                    'type'      => 'error',
-                    'category'  => 'chan-emerg',
-                    'level'     => 'fatal',
-                    'message'   => 'Emergency message',
+                    'type' => 'error',
+                    'category' => 'chan-emerg',
+                    'level' => 'fatal',
+                    'message' => 'Emergency message',
                     'timestamp' => '@double@',
-                    'data'      => ['extra-emerg'],
+                    'data' => ['extra-emerg'],
                 ],
                 [
-                    'type'      => 'default',
-                    'category'  => 'chan-warn',
-                    'level'     => 'warning',
-                    'message'   => 'Warning message',
+                    'type' => 'default',
+                    'category' => 'chan-warn',
+                    'level' => 'warning',
+                    'message' => 'Warning message',
                     'timestamp' => '@double@',
-                    'data'      => ['extra-warn'],
+                    'data' => ['extra-warn'],
                 ],
                 [
-                    'type'      => 'default',
-                    'category'  => 'chan-notice',
-                    'level'     => 'info',
-                    'message'   => 'Notice message',
+                    'type' => 'default',
+                    'category' => 'chan-notice',
+                    'level' => 'info',
+                    'message' => 'Notice message',
                     'timestamp' => '@double@',
-                    'data'      => ['extra-notice'],
+                    'data' => ['extra-notice'],
                 ],
                 [
-                    'type'      => 'error',
-                    'category'  => 'chan-alert',
-                    'level'     => 'fatal',
-                    'message'   => 'Alert message',
+                    'type' => 'error',
+                    'category' => 'chan-alert',
+                    'level' => 'fatal',
+                    'message' => 'Alert message',
                     'timestamp' => '@double@',
-                    'data'      => ['extra-alert'],
+                    'data' => ['extra-alert'],
                 ],
                 [
-                    'type'      => 'error',
-                    'category'  => 'chan-critical',
-                    'level'     => 'fatal',
-                    'message'   => 'Critical message',
+                    'type' => 'error',
+                    'category' => 'chan-critical',
+                    'level' => 'fatal',
+                    'message' => 'Critical message',
                     'timestamp' => '@double@',
-                    'data'      => [
+                    'data' => [
                         'extra-critical',
                     ],
                 ],
@@ -303,52 +303,52 @@ final class SentryHandlerTest extends TestCase
 
         $records = $this->records([
             [
-                'message'    => 'Info message',
-                'context'    => ['exception' => new \LogicException()],
-                'level'      => $level = Logger::INFO,
+                'message' => 'Info message',
+                'context' => ['exception' => new \LogicException()],
+                'level' => $level = Logger::INFO,
                 'level_name' => Logger::getLevelName($level),
-                'channel'    => 'test',
-                'extra'      => [],
+                'channel' => 'test',
+                'extra' => [],
             ],
             [
-                'message'    => 'Error Message',
-                'context'    => [],
-                'level'      => $level = Logger::ERROR,
+                'message' => 'Error Message',
+                'context' => [],
+                'level' => $level = Logger::ERROR,
                 'level_name' => Logger::getLevelName($level),
-                'channel'    => 'test',
-                'extra'      => [],
+                'channel' => 'test',
+                'extra' => [],
             ],
             [
-                'message'    => 'Debug message',
-                'context'    => [],
-                'level'      => $level = Logger::DEBUG,
+                'message' => 'Debug message',
+                'context' => [],
+                'level' => $level = Logger::DEBUG,
                 'level_name' => Logger::getLevelName($level),
-                'channel'    => 'test',
-                'extra'      => [],
+                'channel' => 'test',
+                'extra' => [],
             ],
             [
-                'message'    => 'Warning message',
-                'context'    => [],
-                'level'      => $level = Logger::WARNING,
+                'message' => 'Warning message',
+                'context' => [],
+                'level' => $level = Logger::WARNING,
                 'level_name' => Logger::getLevelName($level),
-                'channel'    => 'test',
-                'extra'      => [],
+                'channel' => 'test',
+                'extra' => [],
             ],
             [
-                'message'    => 'Notice message',
-                'context'    => [],
-                'level'      => $level = Logger::NOTICE,
+                'message' => 'Notice message',
+                'context' => [],
+                'level' => $level = Logger::NOTICE,
                 'level_name' => Logger::getLevelName($level),
-                'channel'    => 'test',
-                'extra'      => [],
+                'channel' => 'test',
+                'extra' => [],
             ],
             [
-                'message'    => 'Critical message',
-                'context'    => ['exception' => $exception = new \LogicException('Exception of critical level')],
-                'level'      => $level = Logger::CRITICAL,
+                'message' => 'Critical message',
+                'context' => ['exception' => $exception = new \LogicException('Exception of critical level')],
+                'level' => $level = Logger::CRITICAL,
                 'level_name' => Logger::getLevelName($level),
-                'channel'    => 'test',
-                'extra'      => [],
+                'channel' => 'test',
+                'extra' => [],
             ],
         ]);
 
@@ -362,28 +362,28 @@ final class SentryHandlerTest extends TestCase
             $exception,
             [
                 [
-                    'type'      => 'error',
-                    'category'  => 'test',
-                    'level'     => 'error',
-                    'message'   => 'Error Message',
+                    'type' => 'error',
+                    'category' => 'test',
+                    'level' => 'error',
+                    'message' => 'Error Message',
                     'timestamp' => '@double@',
-                    'data'      => [],
+                    'data' => [],
                 ],
                 [
-                    'type'      => 'default',
-                    'category'  => 'test',
-                    'level'     => 'warning',
-                    'message'   => 'Warning message',
+                    'type' => 'default',
+                    'category' => 'test',
+                    'level' => 'warning',
+                    'message' => 'Warning message',
                     'timestamp' => '@double@',
-                    'data'      => [],
+                    'data' => [],
                 ],
                 [
-                    'type'      => 'error',
-                    'category'  => 'test',
-                    'level'     => 'fatal',
-                    'message'   => 'Critical message',
+                    'type' => 'error',
+                    'category' => 'test',
+                    'level' => 'fatal',
+                    'message' => 'Critical message',
                     'timestamp' => '@double@',
-                    'data'      => [],
+                    'data' => [],
                 ],
             ]
         );
@@ -395,12 +395,12 @@ final class SentryHandlerTest extends TestCase
 
         $records = $this->records([
             [
-                'message'    => 'Info message',
-                'context'    => [],
-                'level'      => $level = Logger::INFO,
+                'message' => 'Info message',
+                'context' => [],
+                'level' => $level = Logger::INFO,
                 'level_name' => Logger::getLevelName($level),
-                'channel'    => 'test',
-                'extra'      => [],
+                'channel' => 'test',
+                'extra' => [],
             ],
         ]);
 
@@ -421,12 +421,12 @@ final class SentryHandlerTest extends TestCase
             null,
             [
                 [
-                    'type'      => 'default',
-                    'category'  => 'test',
-                    'level'     => 'info',
-                    'message'   => 'Info message',
+                    'type' => 'default',
+                    'category' => 'test',
+                    'level' => 'info',
+                    'message' => 'Info message',
                     'timestamp' => '@double@',
-                    'data'      => [],
+                    'data' => [],
                 ],
             ]
         );
@@ -438,20 +438,20 @@ final class SentryHandlerTest extends TestCase
 
         $records = $this->records([
             [
-                'message'    => 'Info message',
-                'context'    => ['exception' => new \LogicException()],
-                'level'      => $level = Logger::INFO,
+                'message' => 'Info message',
+                'context' => ['exception' => new \LogicException()],
+                'level' => $level = Logger::INFO,
                 'level_name' => Logger::getLevelName($level),
-                'channel'    => 'test',
-                'extra'      => [],
+                'channel' => 'test',
+                'extra' => [],
             ],
             [
-                'message'    => 'Critical message',
-                'context'    => ['exception' => $exception = new \LogicException('Exception of critical level')],
-                'level'      => $level = Logger::CRITICAL,
+                'message' => 'Critical message',
+                'context' => ['exception' => $exception = new \LogicException('Exception of critical level')],
+                'level' => $level = Logger::CRITICAL,
                 'level_name' => Logger::getLevelName($level),
-                'channel'    => 'test',
-                'extra'      => [],
+                'channel' => 'test',
+                'extra' => [],
             ],
         ]);
 
@@ -497,12 +497,12 @@ final class SentryHandlerTest extends TestCase
                     array_map(
                         static function (Breadcrumb $breadcrumb) {
                             return [
-                                'type'      => $breadcrumb->getType(),
-                                'category'  => $breadcrumb->getCategory(),
-                                'level'     => $breadcrumb->getLevel(),
-                                'message'   => $breadcrumb->getMessage(),
+                                'type' => $breadcrumb->getType(),
+                                'category' => $breadcrumb->getCategory(),
+                                'level' => $breadcrumb->getLevel(),
+                                'message' => $breadcrumb->getMessage(),
                                 'timestamp' => (float) $breadcrumb->getTimestamp(),
-                                'data'      => $breadcrumb->getMetadata(),
+                                'data' => $breadcrumb->getMetadata(),
                             ];
                         },
                         $event->getBreadcrumbs()
@@ -594,7 +594,7 @@ class SpyTransport implements TransportInterface
     public function resetSpy(): void
     {
         $this->spiedEvent = null;
-        $this->isFlushed  = false;
+        $this->isFlushed = false;
     }
 
     public function getSpiedEvent(): Event

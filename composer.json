@@ -38,7 +38,7 @@
     },
     "require-dev": {
         "coduo/php-matcher": "^6.0.8",
-        "friendsofphp/php-cs-fixer": "^2.15",
+        "friendsofphp/php-cs-fixer": "^3.9",
         "jangregor/phpstan-prophecy": "^1.0.0",
         "phpstan/phpstan": "^1.8.0",
         "phpstan/phpstan-phpunit": "^1.1.1",
