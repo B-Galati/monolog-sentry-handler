@@ -1,4 +1,8 @@
-SHELL := /bin/bash
+SHELL := bash
+.ONESHELL:
+.SHELLFLAGS := -eu -o pipefail -c
+MAKEFLAGS += --warn-undefined-variables
+MAKEFLAGS += --no-builtin-rules
 
 COMPOSER_INSTALL_FLAGS ?=
 COMPOSER_UPDATE_FLAGS ?=
