@@ -1,8 +1,19 @@
 # Symfony guide
 
-> :information_source:
+> **Note**
 >
-> -   It was written for Symfony 4.4.
+>**If you prefer something simpler** use the
+>[official bundle](https://github.com/getsentry/sentry-symfony) and configure
+>it to work with Monolog and `\BGalati\MonologSentryHandler\SentryHandler` handler
+>as shown in this [doc](https://docs.sentry.io/platforms/php/guides/symfony/#monolog-integration).
+>
+>With the bundle you only need to follow steps marked with a "🎀".
+>
+>Example of such a config in [this PR comment](https://github.com/B-Galati/monolog-sentry-handler/pull/25#issuecomment-788855521).
+
+> **Note**
+>
+> -   It was written for Symfony 6.2.
 > -   Its main purpose is to give ideas of how to integrate this handler in a Symfony project
 
 This guide proposed an opinionated solution to integrate Sentry in a Symfony project.
@@ -25,8 +36,11 @@ It provides the following benefits:
     -   Current user
     -   Client IP (Resolves X-Forwarded-For)
 -   Remove deprecation logs from production logs and thus in Sentry breadcrumbs
--   Enable only [`RequestIntegration`](https://docs.sentry.io/platforms/php/default-integrations/#requestintegration) default integration;
+-   Enable only high value integrations like [`RequestIntegration`](https://docs.sentry.io/platforms/php/default-integrations/#requestintegration) default;
     Thus `ExceptionListenerIntegration` and `FatalErrorListenerIntegration` are disabled as these features are already managed by Symfony.
+
+An [implementation example](https://github.com/B-Galati/monolog-sentry-handler-example) of this guide has been created
+if you want to quickly test the behavior of the handler.
 
 ## Table of contents (generated with [DocToc](https://github.com/thlorenz/doctoc))
 
@@ -34,10 +48,10 @@ It provides the following benefits:
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 -   [Step 1: Configure Sentry Hub](#step-1-configure-sentry-hub)
--   [Step 2: Configure Monolog](#step-2-configure-monolog)
+-   [Step 2: Configure Monolog (🎀)](#step-2-configure-monolog-)
 -   [Step 3: Enrich Sentry data with Symfony events](#step-3-enrich-sentry-data-with-symfony-events)
 -   [Step 4: Flush Monolog on each handled Symfony Messenger message](#step-4-flush-monolog-on-each-handled-symfony-messenger-message)
--   [Step 5: Filter deprecation logs](#step-5-filter-deprecation-logs)
+-   [Step 5: Filter deprecation logs (🎀)](#step-5-filter-deprecation-logs-)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -114,24 +128,20 @@ services:
         autowire: true
         autoconfigure: true
     # [...]
-    BGalati\MonologSentryHandler\SentryHandler: ~
+    BGalati\MonologSentryHandler\SentryHandler:
 
     Sentry\State\HubInterface:
         factory: ['@App\SentryFactory', 'create']
         arguments:
-            $dsn: "%env(SENTRY_DSN)%"
-            $environment: "%env(ENVIRONMENT)%"
-            $release: "%env(APP_VERSION)%"
-            $projectRoot: "%kernel.project_dir%"
-            $cacheDir: "%kernel.cache_dir%"
-
-    # Resolve log PSR placeholders, it can be useful to make breadcrumbs easier to read
-    Monolog\Processor\PsrLogMessageProcessor:
-        tags: [monolog.processor]
+            $dsn: '%env(SENTRY_DSN)%'
+            $environment: symfony_test_environment
+            $release: 2022.07.02
+            $projectRoot: '%kernel.project_dir%'
+            $cacheDir: '%kernel.cache_dir%'
     # [...]
 ```
 
-## Step 2: Configure Monolog
+## Step 2: Configure Monolog (🎀)
 
 We use the services we just declared in monolog config:
 
@@ -142,6 +152,7 @@ monolog:
         # [...]
         sentry:
             type: fingers_crossed
+            process_psr_3_messages: true
             action_level: warning
             handler: sentry_buffer
             excluded_http_codes: [400, 401, 403, 404, 405]
@@ -177,7 +188,6 @@ from the official Sentry Symfony bundle actually. It registers:
 
 namespace App;
 
-use Psr\Log\LoggerInterface;
 use Sentry\State\HubInterface;
 use Sentry\State\Scope;
 use Symfony\Component\Console\ConsoleEvents;
@@ -191,20 +201,15 @@ use Symfony\Component\Security\Core\Security;
 
 class SentryListener implements EventSubscriberInterface
 {
-    private $hub;
-    private $security;
-    private $logger;
-
-    public function __construct(HubInterface $hub, Security $security, LoggerInterface $logger)
-    {
-        $this->hub      = $hub;
-        $this->security = $security;
-        $this->logger   = $logger;
+    public function __construct(
+        private readonly HubInterface $hub,
+        private readonly Security $security,
+    ) {
     }
 
     public function onKernelRequest(RequestEvent $event): void
     {
-        if (!$event->isMasterRequest()) {
+        if (!$event->isMainRequest()) {
             return;
         }
 
@@ -212,69 +217,54 @@ class SentryListener implements EventSubscriberInterface
 
         if ($user = $this->security->getUser()) {
             $userData['type']     = (new \ReflectionClass($user))->getShortName();
-            $userData['username'] = $user->getUsername();
+            $userData['username'] = $user->getUserIdentifier();
             $userData['roles']    = $user->getRoles();
         }
 
-        $this->hub->configureScope(
-            static function (Scope $scope) use ($userData): void {
-                $scope->setUser($userData, true);
-            }
-        );
+        $this->hub->configureScope(static function (Scope $scope) use ($userData): void {
+            $scope->setUser($userData);
+        });
     }
 
     public function onKernelController(ControllerEvent $event): void
     {
-        if (!$event->isMasterRequest()) {
+        if (!$event->isMainRequest()) {
             return;
         }
 
-        if (!$event->getRequest()->attributes->has('_route')) {
+        $matchedRoute = $event->getRequest()->attributes->get('_route');
+
+        if ($matchedRoute === null) {
             return;
         }
 
-        $matchedRoute = (string) $event->getRequest()->attributes->get('_route');
-
-        $this->hub->configureScope(
-            static function (Scope $scope) use ($matchedRoute): void {
-                $scope->setTag('route', $matchedRoute);
-            }
-        );
+        $this->hub->configureScope(static function (Scope $scope) use ($matchedRoute): void {
+            $scope->setTag('route', (string) $matchedRoute);
+        });
     }
 
     public function onKernelTerminate(TerminateEvent $event): void
     {
         $statusCode = $event->getResponse()->getStatusCode();
 
-        $this->hub->configureScope(
-            static function (Scope $scope) use ($statusCode): void {
-                $scope->setTag('status_code', (string) $statusCode);
-            }
-        );
-
-        if ($statusCode >= 500) {
-            // 5XX response are private/security data safe so let's log them for debugging purpose
-            $this->logger->error('500 returned', ['response' => $event->getResponse()]);
-        }
+        $this->hub->configureScope(static function (Scope $scope) use ($statusCode): void {
+            $scope->setTag('status_code', (string) $statusCode);
+        });
     }
 
     public function onConsoleCommand(ConsoleCommandEvent $event): void
     {
-        $command = $event->getCommand();
-        $command = $command ? $command->getName() : 'N/A';
-        $command = $command ?? 'N/A';
+        $command = $event->getCommand()?->getName() ?? 'N/A';
 
-        $this->hub
-            ->configureScope(static function (Scope $scope) use ($command): void {
-                $scope->setTag('command', $command);
-            })
-        ;
+        $this->hub->configureScope(static function (Scope $scope) use ($command): void {
+            $scope->setTag('command', $command);
+        });
     }
 
     /**
      * {@inheritdoc}
      */
-    public static function getSubscribedEvents()
+    public static function getSubscribedEvents(): array
     {
         return [
             KernelEvents::REQUEST    => ['onKernelRequest', 1],
@@ -284,84 +274,23 @@ class SentryListener implements EventSubscriberInterface
         ];
     }
 }
+
 ```
 
 ## Step 4: Flush Monolog on each handled Symfony Messenger message
 
-The usage of `FingersCrossedHandler` and `BufferHandler` prevents long running process
+The usage of `FingersCrossedHandler` and `BufferHandler` prevents long-running process
 like Symfony Messenger worker to send captured events to Sentry.
 
-It works in a HTTP Request context because these handlers are automatically flushed
-by Monolog on PHP script shutdown but it's not how a worker works.
+It works in an HTTP Request context because these handlers are automatically flushed
+by Monolog on PHP script shutdown, but it's not how a worker works.
 
-The listener below resolves this problem by manually flushed Monolog logger
-on `WorkerMessageFailedEvent` and `WorkerMessageHandledEvent` events.
+👉 To fix this behavior set `framework.messenger.reset_on_message` option to `true`.
+_Note that this is default value of Messenger since version 6.1._
 
-```php
-<?php
+## Step 5: Filter deprecation logs (🎀)
 
-use Monolog\ResettableInterface;
-use Psr\Log\LoggerInterface;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\Messenger\Event\WorkerMessageFailedEvent;
-use Symfony\Component\Messenger\Event\WorkerMessageHandledEvent;
-use Webmozart\Assert\Assert;
-
-class MonologResetterEventListener implements EventSubscriberInterface
-{
-    /** @var LoggerInterface&ResettableInterface */
-    private $logger;
-
-    public function __construct(LoggerInterface $logger)
-    {
-        Assert::isInstanceOf($logger, ResettableInterface::class);
-        $this->logger = $logger;
-    }
-
-    public function onMessageFailed(WorkerMessageFailedEvent $event): void
-    {
-        $message  = $event->getEnvelope()->getMessage();
-
-        $context = [
-            'message'   => $message,
-            'error'     => $event->getThrowable()->getMessage(),
-            'class'     => \get_class($message),
-            'exception' => $event->getThrowable(),
-        ];
-
-        $this->logger->error('Error thrown while handling message {class}. Error: "{error}"', $context);
-
-        $this->resetLogger();
-    }
-
-    public function onMessageHandled(WorkerMessageHandledEvent $event): void
-    {
-        $this->resetLogger();
-    }
-
-    public function resetLogger(): void
-    {
-        $this->logger->reset();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public static function getSubscribedEvents()
-    {
-        return [
-            // It should be called after \Symfony\Component\Messenger\EventListener\SendFailedMessageToFailureTransportListener
-            // So that we have as much information as we can
-            WorkerMessageFailedEvent::class  => ['onMessageFailed', -200],
-            WorkerMessageHandledEvent::class => 'onMessageHandled',
-        ];
-    }
-}
-```
-
-## Step 5: Filter deprecation logs
-
-To avoid having deprecation logs in Sentry you can add this config:
+To avoid having deprecation to be logged, add this config:
 
 ```yaml
 #api/config/packages/prod/framework.yaml

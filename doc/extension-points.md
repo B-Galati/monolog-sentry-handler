@@ -1,17 +1,20 @@
 # Extension points
 
-It is required to inherit from `SentryHandler` class and override these methods:
+You can inherit from `SentryHandler` class and optionally override two methods:
 
 ```php
 <?php
 
-use BGalati\MonologSentryHandler\SentryHandler;
+namespace App;
+
+use BGalati\MonologSentryHandler\SentryHandler as BaseSentryHandler;
+use Sentry\Event as SentryEvent;
 use Sentry\State\Scope;
 
-class CustomSentryHandler extends SentryHandler
+class SentryHandler extends BaseSentryHandler
 {
     /** {@inheritdoc} */
-    protected function processScope(Scope $scope, array $record, array $sentryEvent): void
+    protected function processScope(Scope $scope, $record, SentryEvent $sentryEvent): void
     {
         // Your custom logic like this one:
         // ....
@@ -40,4 +43,4 @@ class CustomSentryHandler extends SentryHandler
 }
 ```
 
-Please look at these methods within [the code](../src/SentryHandler.php) if you want more details.
+Please look at these methods within [the class SentryHandler](/src/SentryHandler.php) if you want more details.
