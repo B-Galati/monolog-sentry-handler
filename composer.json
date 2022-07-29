@@ -1,12 +1,16 @@
 {
     "name": "bgalati/monolog-sentry-handler",
-    "description": "Sentry handler for php SDK",
+    "description": "Sentry handler for PHP SDK v2/v3",
     "type": "library",
     "license": "MIT",
     "authors": [
         {
             "name": "Benoit Galati",
             "email": "benoit.galati@gmail.com"
+        },
+        {
+            "name": "Grzegorz Korba",
+            "email": "grzegorz.korba@codito.pl"
         }
     ],
     "autoload": {
@@ -24,23 +28,23 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "1.x-dev"
+            "dev-main": "2.x-dev"
         }
     },
     "require": {
-        "php": "^7.1.3 || ^8.0",
-        "monolog/monolog": "^1.6 || ^2.0",
-        "sentry/sentry": "^2.3.2"
+        "php": "^7.4 || ^8.0",
+        "monolog/monolog": "^1.6 || ^2.0 || ^3.0",
+        "sentry/sentry": "^3.1"
     },
     "require-dev": {
-        "coduo/php-matcher": "^3.2.2",
-        "friendsofphp/php-cs-fixer": "^2.15",
-        "jangregor/phpstan-prophecy": "0.8.0",
-        "phpstan/phpstan": "0.12.25",
-        "phpstan/phpstan-phpunit": "0.12.8",
-        "phpunit/phpunit": "^7.5||^8.3",
-        "sentry/sdk": "^2.0",
-        "symfony/phpunit-bridge": "^4.3",
+        "coduo/php-matcher": "^6.0.8",
+        "friendsofphp/php-cs-fixer": "^3.9",
+        "jangregor/phpstan-prophecy": "1.0.0",
+        "phpstan/phpstan": "1.8.2",
+        "phpstan/phpstan-phpunit": "1.1.1",
+        "phpunit/phpunit": "^9.5.21",
+        "sentry/sdk": "^3.1",
+        "symfony/phpunit-bridge": "^4.4.41",
         "symfony/var-dumper": ">4.3"
     }
 }
