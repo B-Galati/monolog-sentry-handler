@@ -39,9 +39,9 @@
     "require-dev": {
         "coduo/php-matcher": "^6.0.8",
         "friendsofphp/php-cs-fixer": "^3.9",
-        "jangregor/phpstan-prophecy": "^1.0.0",
-        "phpstan/phpstan": "^1.8.0",
-        "phpstan/phpstan-phpunit": "^1.1.1",
+        "jangregor/phpstan-prophecy": "1.0.0",
+        "phpstan/phpstan": "1.8.2",
+        "phpstan/phpstan-phpunit": "1.1.1",
         "phpunit/phpunit": "^9.5.21",
         "sentry/sdk": "^3.1",
         "symfony/phpunit-bridge": "^4.4.41",
