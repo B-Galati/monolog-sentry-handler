@@ -1,6 +1,6 @@
 # Monolog Sentry Handler
 
-[![Build Status](https://github.com/B-Galati/monolog-sentry-handler/workflows/CI/badge.svg?branch=main)](https://github.com/B-Galati/monolog-sentry-handler/actions?query=workflow%3ACI+branch%3Amain)
+[![CI](https://github.com/B-Galati/monolog-sentry-handler/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/B-Galati/monolog-sentry-handler/actions/workflows/ci.yml?query=branch%3Amain)
 [![Latest Version](https://img.shields.io/github/release/B-Galati/monolog-sentry-handler.svg?style=flat-square)](https://packagist.org/packages/bgalati/monolog-sentry-handler)
 [![MIT License](https://img.shields.io/github/license/B-Galati/monolog-sentry-handler?style=flat-square)](LICENCE)
 

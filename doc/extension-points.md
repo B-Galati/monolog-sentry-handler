@@ -43,4 +43,4 @@ class SentryHandler extends BaseSentryHandler
 }
 ```
 
-Please look at these methods within [the class SentryHandler](/src/SentryHandler.php) if you want more details.
+Please look at these methods within [the class SentryHandler](../src/SentryHandler.php) if you want more details.

@@ -5,9 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/B-Galati/monolog-sentry-handler/compare/1.2.2...main)
+## [Unreleased](https://github.com/B-Galati/monolog-sentry-handler/compare/2.0.0...main)
+
+## [2.0.0](https://github.com/B-Galati/monolog-sentry-handler/compare/1.2.2...2.0.0) - 2022-07-29
+
+**New major release!**
+
+See the [upgrade guide](UPGRADE-2.x.md) to know what are the BC breaks.
+
+New [example repository](https://github.com/B-Galati/monolog-sentry-handler-example) to quickly play with the handler if needed.
+
+### Changes
+
+-   ✨ Support for Sentry SDK ^3.1 - [@Wirone](https://github.com/Wirone) ([398ee2](https://github.com/B-Galati/monolog-sentry-handler/commit/398ee2abcbe3487741e9540fd39a00b66cc72986))
+-   ✨ Support Monolog 3 - [@B-Galati](https://github.com/B-Galati) ([f2a708](https://github.com/B-Galati/monolog-sentry-handler/commit/f2a708f026e33d7498a946c2b570694b615beb67))
+-   📝 Update doc for the V2 - [@B-Galati](https://github.com/B-Galati) ([0166a1](https://github.com/B-Galati/monolog-sentry-handler/commit/0166a10d1e08e760088106766f33652ea0fdc75b))
+
+### Internal
+
+-   👷 Remove Travis and init GitHub Actions - [@B-Galati](https://github.com/B-Galati) ([652f58](https://github.com/B-Galati/monolog-sentry-handler/commit/652f583747fc2ed9afc2e2078ec85446f4619394))
+-   👷 Migrate to GitHub Actions - [@B-Galati](https://github.com/B-Galati) ([fe1807](https://github.com/B-Galati/monolog-sentry-handler/commit/fe18073f5e7464aeb0b673b8b9a0789b0a523a5d))
+-   ⬆️ Upgrade to PHPUnit 9 - [@B-Galati](https://github.com/B-Galati) ([24cb5b](https://github.com/B-Galati/monolog-sentry-handler/commit/24cb5b384de2a6470b43da35e38c12c1ff28d54c))
+-   ⬆️ Upgrade to PHP CS Fixer 3 - [@B-Galati](https://github.com/B-Galati) ([3ac9dd](https://github.com/B-Galati/monolog-sentry-handler/commit/3ac9dd98796eccb0c4bf4cd1beb7d92fa3e31977))
+-   🔧 Improve Makefile default behavior - [@B-Galati](https://github.com/B-Galati) ([57b0b2](https://github.com/B-Galati/monolog-sentry-handler/commit/57b0b2e1df86d883653991d4b3d843d835caacfb))
+-   🔧 Update branch alias to work with main and version 2 - [@B-Galati](https://github.com/B-Galati) ([f285c5](https://github.com/B-Galati/monolog-sentry-handler/commit/f285c553bd66016c0832d5914e2846b9c715a25e))
+-   🔧 Update PHPStan and fix the version - [@B-Galati](https://github.com/B-Galati) ([59440a](https://github.com/B-Galati/monolog-sentry-handler/commit/59440a2fb5019ab35e0d0568bcd4b8fb896fa6b0))
 
 ## [1.2.2](https://github.com/B-Galati/monolog-sentry-handler/compare/1.2.1...1.2.2) - 2020-09-04
+
+### Changes
 
 -   📝 Add filter deprecation logs to the doc - [@B-Galati](https://github.com/B-Galati) ([e1c70a](https://github.com/B-Galati/monolog-sentry-handler/commit/e1c70a3da87f44b923173becf7bec59f9756696a))
 -   📝 Update Symfony guide - [@B-Galati](https://github.com/B-Galati) ([727706](https://github.com/B-Galati/monolog-sentry-handler/commit/727706b952bc1119a0b5da1ec12ff104682f386a))
