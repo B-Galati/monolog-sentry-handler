@@ -1,6 +1,6 @@
 name: CI
 
-on: [ pull_request ]
+on: [ pull_request, push ]
 
 env:
   COMPOSER_UPDATE_FLAGS: "--no-interaction --no-progress --prefer-dist "
