@@ -63,15 +63,19 @@ Check out the [handler constructor](src/SentryHandler.php) to know how to contro
 
 ## FAQ
 
-### What are the differences with the official Monolog Sentry handler?
+### What are the differences with the official Monolog Sentry handlers?
 
-It is pretty much the same thing but this one captures Monolog records as breadcrumbs
-when flushing in batch.
+At the moment the official SDK proposes two Monolog handlers:
+- `Sentry\Monolog\Handler`: each logs becomes a Sentry event
+  - Depending on the setup it can create a lot of noise.
+- `Sentry\Monolog\BreadcrumbHandler`: each logs is added as a breadcrumb in the current event
+  - It cannot be used only with Monolog: it requires default integrations to work correctly.
 
-~~It provides a workaround for [issue getsentry/sentry-php#811](https://github.com/getsentry/sentry-php/issues/811) which prevents sending events to Sentry in long running process.~~
+Both of them don't send event immediately. Thus, sending Sentry events happens; either when PHP process terminates or when the flush is done explicitly.
 
-Breadcrumbs support has been proposed in a pull request that has been refused for good reasons that
-can be checked in the [PR](https://github.com/getsentry/sentry-php/pull/844). Basically the official one aims to be as simple as possible.
+This lib proposes a Handler that is different:
+- It flushes Sentry events on each call: looks like a standard for Monolog handlers
+- It adds log records as breadcrumbs when it is used with a buffering handler like `FingersCrossedHandler`
 
 ### What about contributing it to the Monolog project?
 
