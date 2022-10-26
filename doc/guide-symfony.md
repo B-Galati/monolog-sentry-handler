@@ -78,6 +78,8 @@ services:
     Sentry\Integration\RequestIntegration:
     Sentry\Integration\EnvironmentIntegration:
     Sentry\Integration\FrameContextifierIntegration:
+    Sentry\Integration\RequestFetcherInterface:
+        class: Sentry\Integration\RequestFetcher
 ```
 
 Let's explain the Monolog config:
