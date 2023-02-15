@@ -41,6 +41,7 @@ Let's configure Sentry bundle and Monolog:
 sentry:
     dsn: '%env(SENTRY_DSN)%'
     register_error_listener: false # Disabled to avoid duplicated Sentry events
+    register_error_handler: false # Disabled to avoid duplicated Sentry events, see https://github.com/getsentry/sentry-symfony/pull/687
     tracing: false
     messenger: false # Duplicates Sentry events as it is already managed through Monolog.
     options:
