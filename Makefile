@@ -1,7 +1,3 @@
-SHELL := bash
-.ONESHELL:
-.SHELLFLAGS := -eu -o pipefail -c
-MAKEFLAGS += --warn-undefined-variables
 SHELL:=bash
 .SHELLFLAGS:=-eu -o pipefail -c
 MAKEFLAGS+=--warn-undefined-variables
