@@ -18,6 +18,8 @@ jobs:
           - php: 7.4 # should use monolog v2
           - php: 8.0 # should use monolog v2
           - php: 8.1 # should use monolog v3
+          - php: 8.2 # should use monolog v3
+          - php: 8.3 # should use monolog v3
     steps:
       - uses: actions/checkout@v2
 
