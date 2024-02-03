@@ -4,28 +4,25 @@ declare(strict_types=1);
 
 namespace BGalati\MonologSentryHandler\Tests;
 
-use BGalati\MonologSentryHandler\SentryHandler;
 use Coduo\PHPMatcher\PHPUnit\PHPMatcherAssertions;
-use GuzzleHttp\Promise\FulfilledPromise;
-use GuzzleHttp\Promise\PromiseInterface;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Level;
 use Monolog\Logger;
 use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
 use Sentry\Breadcrumb;
+use Sentry\Client;
 use Sentry\ClientBuilder;
-use Sentry\Event;
 use Sentry\Integration\EnvironmentIntegration;
-use Sentry\Options;
-use Sentry\Response;
-use Sentry\ResponseStatus;
 use Sentry\SentrySdk;
 use Sentry\Severity;
 use Sentry\State\HubInterface;
-use Sentry\State\Scope;
-use Sentry\Transport\TransportFactoryInterface;
-use Sentry\Transport\TransportInterface;
+
+if (defined(Client::class.'::SDK_VERSION') && version_compare(Client::SDK_VERSION, '4.0.0') >= 0) {
+    require __DIR__.'/SentryStubV4.php';
+} else {
+    require __DIR__.'/SentryStubV3.php';
+}
 
 final class SentryHandlerTest extends TestCase
 {
@@ -47,7 +44,12 @@ final class SentryHandlerTest extends TestCase
                 ],
             ]
         );
-        $clientBuilder->setTransportFactory(new FakeTransportFactory($this->transport));
+
+        if (defined(Client::class.'::SDK_VERSION') && version_compare(Client::SDK_VERSION, '4.0.0') >= 0) {
+            $clientBuilder->setTransport($this->transport);
+        } else {
+            $clientBuilder->setTransportFactory(new FakeTransportFactory($this->transport));
+        }
 
         $client = $clientBuilder->getClient();
 
@@ -492,7 +494,7 @@ final class SentryHandlerTest extends TestCase
 
         if ($breadcrumbs) {
             $this->assertMatchesPattern(
-                json_encode($breadcrumbs),
+                json_encode($breadcrumbs, JSON_THROW_ON_ERROR),
                 json_encode(
                     array_map(
                         static function (Breadcrumb $breadcrumb) {
@@ -542,90 +544,5 @@ final class SentryHandlerTest extends TestCase
         $handler->setFormatter(new LineFormatter('%channel%.%level_name%: %message% %extra%'));
 
         return $handler;
-    }
-}
-
-class SpySentryHandler extends SentryHandler
-{
-    /**
-     * @var bool
-     */
-    public $afterWriteCalled = false;
-
-    protected function processScope(Scope $scope, $record, Event $sentryEvent): void
-    {
-        $scope->setExtra('processScope', 'called');
-    }
-
-    protected function afterWrite(): void
-    {
-        $this->afterWriteCalled = true;
-
-        parent::afterWrite();
-    }
-
-    public function resetSpy(): void
-    {
-        $this->afterWriteCalled = false;
-    }
-}
-
-class SpyTransport implements TransportInterface
-{
-    /**
-     * @var Event|null
-     */
-    public $spiedEvent;
-
-    /**
-     * @var bool
-     */
-    public $isFlushed = false;
-
-    public function send(Event $event): PromiseInterface
-    {
-        $this->spiedEvent = $event;
-
-        return new FulfilledPromise(new Response(ResponseStatus::skipped(), $event));
-    }
-
-    public function resetSpy(): void
-    {
-        $this->spiedEvent = null;
-        $this->isFlushed = false;
-    }
-
-    public function getSpiedEvent(): Event
-    {
-        if (null === $this->spiedEvent) {
-            throw new \RuntimeException('No spied scope');
-        }
-
-        return $this->spiedEvent;
-    }
-
-    public function close(?int $timeout = null): PromiseInterface
-    {
-        $this->isFlushed = true;
-
-        return new FulfilledPromise(true);
-    }
-}
-
-class FakeTransportFactory implements TransportFactoryInterface
-{
-    /**
-     * @var SpyTransport
-     */
-    private $transport;
-
-    public function __construct(SpyTransport $transport)
-    {
-        $this->transport = $transport;
-    }
-
-    public function create(Options $options): TransportInterface
-    {
-        return $this->transport;
     }
 }

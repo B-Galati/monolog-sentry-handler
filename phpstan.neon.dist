@@ -6,9 +6,10 @@ parameters:
     inferPrivatePropertyTypeFromConstructor: true
     tipsOfTheDay: false
     checkMissingIterableValueType: false
+    treatPhpDocTypesAsCertain: false
 
     level: 8
-    paths: [ src, tests ]
+    paths: [ src ]
 
     ignoreErrors:
         - "#^Cannot assign offset 'formatted' to Monolog\\\\LogRecord\\.$#"
@@ -20,12 +21,3 @@ parameters:
 
         - message: "#^Parameter \\#1 \\$record of method Monolog\\\\Formatter\\\\LineFormatter\\:\\:format\\(\\) expects Monolog\\\\LogRecord, array\\<string, mixed\\>\\|Monolog\\\\LogRecord given\\.$#"
           path: src/SentryHandler.php
-
-        - message: "#expects Monolog\\\\LogRecord, array\\<string, mixed\\>\\|Monolog\\\\LogRecord given\\.$#"
-          path: tests
-
-        - message: "#expects array\\<Monolog\\\\LogRecord\\>, array\\<array\\<string, mixed\\>\\|Monolog\\\\LogRecord\\> given\\.$#"
-          path: tests
-
-        - message: "#^PHPDoc tag @param for parameter \\$level with type array\\<int, Monolog\\\\Level\\>\\|int is not subtype of native type int\\|null\\.$#"
-          path: tests
