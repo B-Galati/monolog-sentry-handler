@@ -461,7 +461,7 @@ final class SentryHandlerTest extends TestCase
         $this->assertNull($this->transport->spiedEvent);
     }
 
-    private function assertCapturedEvent(Severity $severity, string $message, array $extra, \Exception $exception = null, array $breadcrumbs = []): void
+    private function assertCapturedEvent(Severity $severity, string $message, array $extra, ?\Exception $exception = null, array $breadcrumbs = []): void
     {
         $event = $this->transport->getSpiedEvent();
 
@@ -531,7 +531,7 @@ final class SentryHandlerTest extends TestCase
     /**
      * @param Logger::* $level
      */
-    private function createSentryHandler(int $level = null): SpySentryHandler
+    private function createSentryHandler(?int $level = null): SpySentryHandler
     {
         if (null === $level) {
             $handler = new SpySentryHandler($this->hub);
@@ -552,13 +552,11 @@ class SpySentryHandler extends SentryHandler
      */
     public $afterWriteCalled = false;
 
-    /** {@inheritdoc} */
     protected function processScope(Scope $scope, $record, Event $sentryEvent): void
     {
         $scope->setExtra('processScope', 'called');
     }
 
-    /** {@inheritdoc} */
     protected function afterWrite(): void
     {
         $this->afterWriteCalled = true;
