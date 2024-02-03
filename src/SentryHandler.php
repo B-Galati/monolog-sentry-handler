@@ -34,9 +34,6 @@ if (Logger::API >= 3) { // @phpstan-ignore-line - Comparison operation ">=" betw
          */
         abstract protected function doWrite($record): void;
 
-        /**
-         * {@inheritdoc}
-         */
         protected function write(LogRecord $record): void
         {
             $this->doWrite($record);
@@ -104,9 +101,6 @@ if (Logger::API >= 3) { // @phpstan-ignore-line - Comparison operation ">=" betw
          */
         abstract protected function doWrite($record): void;
 
-        /**
-         * {@inheritdoc}
-         */
         protected function write(array $record): void
         {
             $this->doWrite($record);
@@ -183,9 +177,6 @@ class SentryHandler extends AbstractProcessingHandler
         $this->hub = $hub;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function handleBatch(array $records): void
     {
         if (!$records) {
