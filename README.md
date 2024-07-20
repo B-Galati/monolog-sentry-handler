@@ -4,7 +4,7 @@
 [![Latest Version](https://img.shields.io/github/release/B-Galati/monolog-sentry-handler.svg?style=flat-square)](https://packagist.org/packages/bgalati/monolog-sentry-handler)
 [![MIT License](https://img.shields.io/github/license/B-Galati/monolog-sentry-handler?style=flat-square)](LICENCE)
 
-It is a [Monolog](https://github.com/Seldaek/monolog) handler for Sentry PHP SDK v2 and v3 with breadcrumbs support.
+It is a [Monolog](https://github.com/Seldaek/monolog) handler for Sentry PHP SDK v2, v3 and v4 with breadcrumbs support.
 
 ![Sentry event example](doc/sentry-event-example.png)
 
@@ -21,7 +21,7 @@ It is a [Monolog](https://github.com/Seldaek/monolog) handler for Sentry PHP SDK
 The suggested installation method is via [composer](https://getcomposer.org/):
 
 ```bash
-# For Sentry PHP SDK v3
+# For Sentry PHP SDK v3/v4
 composer require bgalati/monolog-sentry-handler
 
 # For Sentry PHP SDK v2
